@@ -63,9 +63,6 @@ client.once("ready", () => {
             return res.json()
         })
         .then(data => {
-
-            console.log(JSON.stringify(data))
-
             // == Send message to discord here ==
 
             // Find channel

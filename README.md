@@ -17,3 +17,16 @@ npm install
 ```bash
 node app.js
 ```
+
+# Packaging
+
+We use [pkg](https://www.npmjs.com/package/pkg) to create a static binary, platform agnostic.
+
+* Install pkg but don't save it in package.json:
+```bash
+npm install --no-save pkg
+```
+* Build the executables:
+```bash
+npx pkg -t node16-linuxstatic-x64,node16-win-x64  -o elprimobot app.js
+```
