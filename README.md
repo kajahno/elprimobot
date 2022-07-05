@@ -11,3 +11,9 @@ It's a bot to help us manage our Discord
 ```bash
 npm install
 ```
+
+# Running the app
+
+```bash
+node app.js
+```
