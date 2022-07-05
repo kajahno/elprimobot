@@ -1,0 +1,22 @@
+{
+  "name": "elprimobot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
+  "author": "Shay DeWael",
+  "license": "MIT",
+  "dependencies": {
+    "cron": "^2.0.0",
+    "discord.js": "^13.8.1",
+    "dotenv": "^16.0.1",
+    "node-fetch": "^3.2.6"
+  },
+  "devDependencies": {
+    "eslint": "^8.19.0"
+  }
+}
