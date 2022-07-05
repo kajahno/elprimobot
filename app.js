@@ -1,6 +1,5 @@
 require("dotenv").config();
 
-const CronJob = require("cron").CronJob;
 const { Client, Intents, MessageEmbed } = require("discord.js");
 const fetch = require("node-fetch");
 
@@ -16,7 +15,6 @@ const client = new Client({ intents: [Intents.FLAGS.GUILDS] });
 
 // When the client is ready, run this code (only once)
 client.once("ready", () => {
-    console.log("Ready!");
 
     const data = {
         query: `
@@ -58,62 +56,47 @@ client.once("ready", () => {
         },
         compress: true,
     })
-    .then( res => res.json())
-    .then( data => {
+        .then(res => {
+            if (!res.ok) {
+                throw res.error;
+            }
+            return res.json()
+        })
+        .then(data => {
 
-        console.log(JSON.stringify(data))
+            console.log(JSON.stringify(data))
 
-        // == Send message to discord here ==
+            // == Send message to discord here ==
 
-        // Find channel
-        const channelName = "test-bot-ignore";
-        console.log(client.isReady());
-        const channel = client.channels.cache.find(
-            (channel) => channel.name === channelName
-        );
+            // Find channel
+            const channelName = process.env.DAILY_CHALLENGES_CHANNEL || undefined;
+            const channel = client.channels.cache.find(
+                (channel) => channel.name === channelName
+            );
 
-        const problemData = data.data.activeDailyCodingChallengeQuestion;
-        console.log(problemData)
+            const problemData = data.data.activeDailyCodingChallengeQuestion;
+            console.log(problemData)
 
-        let problemDifficulty = problemData.question.difficulty;
-        problemDifficulty = "Hard"
-        let problemDifficultyStr;
-        if (problemDifficulty === "Easy"){
-            problemDifficultyStr = "```yaml\n" + problemDifficulty + "\n```"
-        }
-        else if (problemDifficulty === "Medium"){
-            problemDifficultyStr = "```apache\n" + problemDifficulty + "\n```"
-        } else {
-            problemDifficultyStr = "```diff\n-" + problemDifficulty + "\n```"
-        }
+            const message = new MessageEmbed()
+                .setColor('#00FFFF')
+                .setTitle(`${problemData.question.frontendQuestionId}. ${problemData.question.title}`)
+                .setURL(`${leetcodeUrl}${problemData.link}`)
+                .addFields(
+                    { name: 'Difficulty', value: "```" + problemData.question.difficulty + "\n```", inline: true },
+                    { name: 'Success rate', value: "```" + Number.parseFloat(problemData.question.acRate).toFixed(2) + "```", inline: true },
+                )
+            channel.send({ content: "**Leetcode Daily**", embeds: [message] })
+                .then(() => {
+                    // Close the client websocket connection and unblock program
+                    client.destroy();
+                })
 
-        const message = new MessageEmbed()
-            .setColor('#00FFFF')
-            .setTitle(`${problemData.question.frontendQuestionId}. ${problemData.question.title}`)
-            .setURL(`${leetcodeUrl}${problemData.link}`)
-            .addFields(
-                { name: 'Difficulty', value: problemDifficultyStr, inline: true },
-                { name: 'Accuracy', value: "```" + Number.parseFloat(problemData.question.acRate).toFixed(2) + "```", inline: true },
-            )
-        channel.send({ content: "**Leetcode Daily**", embeds: [message] })
-
-    });
-
+        })
+        .catch(error => {
+            console.error("Could not fetch: ", error)
+        })
 });
 
-// Login to Discord with your client's token
-client.login();
 
-// Main cron
-// const job = new CronJob(
-//   "*/5 * * * * *",
-//   function () {
-//     console.log("You will see this message every second");
-//   },
-//   null,
-//   true,
-//   null,
-//   null,
-//   null,
-//   "0"
-// );
+// Login to Discord with your client's token
+client.login() // This leaves the app blocking because it opens a ws connection to Discord, call client.destroy() somewhere else
