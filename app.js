@@ -1,5 +1,6 @@
 require("dotenv").config();
 
+const { time } = require("cron");
 const { Client, Intents, MessageEmbed } = require("discord.js");
 const fetch = require("node-fetch");
 
@@ -16,7 +17,7 @@ const LEETCODE_URL = "https://leetcode.com"
 // Create a new client instance
 const client = new Client({ intents: [Intents.FLAGS.GUILDS] });
 
-const getLeetcodeData = async _ => {
+const dailyGetLeetcodeData = async _ => {
 
     const data = {
         query: `
@@ -65,21 +66,82 @@ const getLeetcodeData = async _ => {
     return response.json()
 }
 
+const weeklyGetLeetcodeData = async _ => {
+
+    const now = new Date();
+
+    const data = {
+        query: `
+    query dailyCodingQuestionRecords($year: Int!, $month: Int!) {
+        dailyCodingChallengeV2(year: $year, month: $month) {
+            challenges {
+            date
+            userStatus
+            link
+            question {
+                questionFrontendId
+                title
+                titleSlug
+            }
+            }
+            weeklyChallenges {
+            date
+            userStatus
+            link
+            question {
+                questionFrontendId
+                title
+                titleSlug
+            }
+            }
+        }
+    }`,
+        variables: { year: now.getFullYear(), month: now.getMonth() + 1 }
+    }
+
+    const response = await fetch(`${LEETCODE_URL}/graphql/`, {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: {
+            "Content-Type": "application/json",
+            "Accept-Encoding": "gzip, deflate, br",
+        },
+        compress: true,
+    })
+
+    if (response.status !== 200){
+        console.error("could not fetch: ", response.status)
+        return
+    }
+    return response.json()
+}
+
+
 
 // When the client is ready, run this code (only once)
 client.once("ready", async () => {
 
-    const leetcodeData = await getLeetcodeData();
-    if (! leetcodeData ) {
+    const dailyLeetcodeData = await dailyGetLeetcodeData();
+    if (! dailyLeetcodeData ) {
         console.error("there's no data available")
         return
     }
 
-    const problemData = leetcodeData.data.activeDailyCodingChallengeQuestion;
-    console.log(problemData)
+    const dailyProblemData = dailyLeetcodeData.data.activeDailyCodingChallengeQuestion;
+    console.log(dailyProblemData)
+
+    const weeklyLeetcodeData = await weeklyGetLeetcodeData();
+    if (! weeklyLeetcodeData ) {
+        console.error("there's no data available")
+        return
+    }
+
+    const weeklyProblemData = weeklyLeetcodeData.data.dailyCodingChallengeV2.weeklyChallenges;
+    const lastWeeklyProblemData = weeklyProblemData[weeklyProblemData.length - 1]
+    console.log(lastWeeklyProblemData)
 
     // Find channel
-    const channelName = process.env.DAILY_CHALLENGES_CHANNEL || undefined;
+    const channelName = process.env.LEETCODE_CHALLENGES_CHANNEL || undefined;
     const channel = client.channels.cache.find(
         (channel) => channel.name === channelName
     );
@@ -89,16 +151,24 @@ client.once("ready", async () => {
         return
     }
 
-    const message = new MessageEmbed()
+    const dailyProblemMessage = new MessageEmbed()
         .setColor('#00FFFF')
-        .setTitle(`${problemData.question.frontendQuestionId}. ${problemData.question.title}`)
-        .setURL(`${LEETCODE_URL}${problemData.link}`)
+        .setTitle(`${dailyProblemData.question.frontendQuestionId}. ${dailyProblemData.question.title}`)
+        .setURL(`${LEETCODE_URL}${dailyProblemData.link}`)
         .addFields(
-            { name: 'Difficulty', value: "```" + problemData.question.difficulty + "\n```", inline: true },
-            { name: 'Success rate', value: "```" + Number.parseFloat(problemData.question.acRate).toFixed(2) + "```", inline: true },
+            { name: 'Difficulty', value: "```" + dailyProblemData.question.difficulty + "\n```", inline: true },
+            { name: 'Success rate', value: "```" + Number.parseFloat(dailyProblemData.question.acRate).toFixed(2) + "```", inline: true },
         )
 
-    await channel.send({ content: "**Leetcode Daily**", embeds: [message] })
+    await channel.send({ content: "**Leetcode Daily**", embeds: [dailyProblemMessage] })
+
+    const weeklyProblemMessage = new MessageEmbed()
+        .setColor('#FFBF00')
+        .setTitle(`${lastWeeklyProblemData.question.questionFrontendId}. ${lastWeeklyProblemData.question.title}`)
+        .setURL(`${LEETCODE_URL}${lastWeeklyProblemData.link}`)
+        .setFooter({ text: 'Time to code 🔥👨‍💻🔥' });
+
+    await channel.send({ content: "**Leetcode Weekly**", embeds: [weeklyProblemMessage] })
 
     // Close the client websocket connection and unblock program
     client.destroy();
