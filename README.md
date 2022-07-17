@@ -12,6 +12,10 @@ It's a bot to help us manage our Discord
 npm install
 ```
 
+# Configuring environment
+
+Copy .env.sample, rename it to .env and replace the placeholders
+
 # Running the app
 
 ```bash
