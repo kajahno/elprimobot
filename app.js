@@ -69,7 +69,7 @@ const dailyGetLeetcodeData = async _ => {
 const weeklyGetLeetcodeData = async _ => {
 
     const now = new Date();
-    
+
     const data = {
         query: `
     query dailyCodingQuestionRecords($year: Int!, $month: Int!) {
