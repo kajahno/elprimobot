@@ -10,11 +10,13 @@ const config = {
     PUBLIC_KEY: process.env.PUBLIC_KEY || undefined,
 };
 
+// Globals
+const LEETCODE_URL = "https://leetcode.com"
+
 // Create a new client instance
 const client = new Client({ intents: [Intents.FLAGS.GUILDS] });
 
-// When the client is ready, run this code (only once)
-client.once("ready", () => {
+const getLeetcodeData = async _ => {
 
     const data = {
         query: `
@@ -46,8 +48,7 @@ client.once("ready", () => {
         variables: {}
     }
 
-    const leetcodeUrl = "https://leetcode.com"
-    fetch(`${leetcodeUrl}/graphql/`, {
+    const response = await fetch(`${LEETCODE_URL}/graphql/`, {
         method: "POST",
         body: JSON.stringify(data),
         headers: {
@@ -56,44 +57,54 @@ client.once("ready", () => {
         },
         compress: true,
     })
-        .then(res => {
-            if (!res.ok) {
-                throw res.error;
-            }
-            return res.json()
-        })
-        .then(data => {
-            // == Send message to discord here ==
 
-            // Find channel
-            const channelName = process.env.DAILY_CHALLENGES_CHANNEL || undefined;
-            const channel = client.channels.cache.find(
-                (channel) => channel.name === channelName
-            );
+    if (response.status !== 200){
+        console.error("could not fetch: ", response.status)
+        return
+    }
+    return response.json()
+}
 
-            const problemData = data.data.activeDailyCodingChallengeQuestion;
-            console.log(problemData)
 
-            const message = new MessageEmbed()
-                .setColor('#00FFFF')
-                .setTitle(`${problemData.question.frontendQuestionId}. ${problemData.question.title}`)
-                .setURL(`${leetcodeUrl}${problemData.link}`)
-                .addFields(
-                    { name: 'Difficulty', value: "```" + problemData.question.difficulty + "\n```", inline: true },
-                    { name: 'Success rate', value: "```" + Number.parseFloat(problemData.question.acRate).toFixed(2) + "```", inline: true },
-                )
-            channel.send({ content: "**Leetcode Daily**", embeds: [message] })
-                .then(() => {
-                    // Close the client websocket connection and unblock program
-                    client.destroy();
-                })
+// When the client is ready, run this code (only once)
+client.once("ready", async () => {
 
-        })
-        .catch(error => {
-            console.error("Could not fetch: ", error)
-        })
+    const leetcodeData = await getLeetcodeData();
+    if (! leetcodeData ) {
+        console.error("there's no data available")
+        return
+    }
+
+    const problemData = leetcodeData.data.activeDailyCodingChallengeQuestion;
+    console.log(problemData)
+
+    // Find channel
+    const channelName = process.env.DAILY_CHALLENGES_CHANNEL || undefined;
+    const channel = client.channels.cache.find(
+        (channel) => channel.name === channelName
+    );
+
+    if (!channel){
+        console.error(`could not find Discord channel: ${channelName}`)
+        return
+    }
+
+    const message = new MessageEmbed()
+        .setColor('#00FFFF')
+        .setTitle(`${problemData.question.frontendQuestionId}. ${problemData.question.title}`)
+        .setURL(`${LEETCODE_URL}${problemData.link}`)
+        .addFields(
+            { name: 'Difficulty', value: "```" + problemData.question.difficulty + "\n```", inline: true },
+            { name: 'Success rate', value: "```" + Number.parseFloat(problemData.question.acRate).toFixed(2) + "```", inline: true },
+        )
+
+    await channel.send({ content: "**Leetcode Daily**", embeds: [message] })
+
+    // Close the client websocket connection and unblock program
+    client.destroy();
+
 });
 
 
 // Login to Discord with your client's token
-client.login() // This leaves the app blocking because it opens a ws connection to Discord, call client.destroy() somewhere else
+client.login() // This leaves the app blocking because it opens a ws connection to Discord, call client.destroy() somewhere else to close it
