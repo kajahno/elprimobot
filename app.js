@@ -172,7 +172,8 @@ client.once("ready", async () => {
         .setColor('#FFBF00')
         .setTitle(`${lastWeeklyProblemData.question.questionFrontendId}. ${lastWeeklyProblemData.question.title}`)
         .setURL(`${LEETCODE_URL}${lastWeeklyProblemData.link}`)
-        .setFooter({ text: 'Time to code 🔥👨‍💻🔥, ' + weeklyRemainingDays +' days remaining ' });
+        .addFields({ name: 'Remaining time', value: `${weeklyRemainingDays} days`, inline: false })
+        .setFooter({ text: 'Time to code 🔥👨‍💻🔥' });
 
     await channel.send({ content: "**Leetcode Weekly**", embeds: [weeklyProblemMessage] })
 
