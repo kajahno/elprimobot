@@ -137,8 +137,14 @@ client.once("ready", async () => {
     }
 
     const weeklyProblemData = weeklyLeetcodeData.data.dailyCodingChallengeV2.weeklyChallenges;
-    const lastWeeklyProblemData = weeklyProblemData[weeklyProblemData.length - 1]
-    console.log(lastWeeklyProblemData)
+    const lastWeeklyProblemData = weeklyProblemData[weeklyProblemData.length - 1];
+
+    const oneDay = 24 * 60 * 60 * 1000; //this is a day expressed in milliseconds
+    const now = new Date();
+    const weeklyChangeDate = Date.parse(lastWeeklyProblemData.date) + oneDay * 7;
+    const weeklyRemainingDays = Math.round(Math.abs((weeklyChangeDate - now)/oneDay));
+
+    console.log(lastWeeklyProblemData);
 
     // Find channel
     const channelName = process.env.LEETCODE_CHALLENGES_CHANNEL || undefined;
@@ -166,7 +172,7 @@ client.once("ready", async () => {
         .setColor('#FFBF00')
         .setTitle(`${lastWeeklyProblemData.question.questionFrontendId}. ${lastWeeklyProblemData.question.title}`)
         .setURL(`${LEETCODE_URL}${lastWeeklyProblemData.link}`)
-        .setFooter({ text: 'Time to code 🔥👨‍💻🔥' });
+        .setFooter({ text: 'Time to code 🔥👨‍💻🔥, ' + weeklyRemainingDays +' days remaining ' });
 
     await channel.send({ content: "**Leetcode Weekly**", embeds: [weeklyProblemMessage] })
 
