@@ -143,6 +143,7 @@ client.once("ready", async () => {
     const now = new Date();
     const weeklyChangeDate = Date.parse(lastWeeklyProblemData.date) + oneDay * 7;
     const weeklyRemainingDays = Math.round(Math.abs((weeklyChangeDate - now)/oneDay));
+    const weeklyRemainingDaysMessage = weeklyRemainingDays + (weeklyRemainingDays >= 2 ? " days" : " day");
 
     console.log(lastWeeklyProblemData);
 
@@ -172,7 +173,7 @@ client.once("ready", async () => {
         .setColor('#FFBF00')
         .setTitle(`${lastWeeklyProblemData.question.questionFrontendId}. ${lastWeeklyProblemData.question.title}`)
         .setURL(`${LEETCODE_URL}${lastWeeklyProblemData.link}`)
-        .addFields({ name: 'Remaining time', value: `${weeklyRemainingDays} days`, inline: false })
+        .addFields({ name: 'Remaining time', value: `${weeklyRemainingDaysMessage}`, inline: false })
         .setFooter({ text: 'Time to code 🔥👨‍💻🔥' });
 
     await channel.send({ content: "**Leetcode Weekly**", embeds: [weeklyProblemMessage] })
