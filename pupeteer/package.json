@@ -1,0 +1,17 @@
+{
+  "name": "pupeteer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "type": "commonjs",
+  "scripts": {},
+  "author": "Domination Dev Group",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.0.1",
+    "puppeteer": "^16.1.1"
+  },
+  "devDependencies": {
+    "eslint": "^8.19.0"
+  }
+}
