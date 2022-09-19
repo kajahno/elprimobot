@@ -46,7 +46,7 @@ const newMemberEmail = "yamil.tactuk@gmail.com";
     await emailBox.press('Enter');
 
     const snooze = ms => new Promise(resolve => setTimeout(resolve, ms));
-    await snooze(2000);
+    await snooze(4000);
 
     const passwordBox = await page.$("input[type='password']");
     if(passwordBox != null)
@@ -62,7 +62,7 @@ const newMemberEmail = "yamil.tactuk@gmail.com";
     
     await page.click("div[aria-label='Add members']");
 
-    await snooze(2000);
+    await snooze(4000);
     
     const addGroupMembers = await page.$("input[aria-label='Group members']");
     await addGroupMembers.type(newMemberEmail);
