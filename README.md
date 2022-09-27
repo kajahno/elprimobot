@@ -34,3 +34,13 @@ npm install --no-save pkg
 ```bash
 npx pkg -t node16-linuxstatic-x64,node16-win-x64  -o elprimobot app.js
 ```
+
+# Deploying
+
+* Use rsync and send using compression, and incremental changes: it saves bandwidth (we need to save because we have a limit in the instance type in GCP)
+
+```bash
+rsync -e "ssh -i [the-ssh-key] -p [the-ssh-port]" -avz [binary] [username]@[host]:[path/to/dir]
+```
+
+> Note: rsync must be installed in the remote host

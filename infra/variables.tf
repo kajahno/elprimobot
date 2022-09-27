@@ -28,3 +28,11 @@ variable "credentials_file_path" {
   description   = "Path to the JSON file that contains the service account credentials"
   default       = "./credentials.json"
 }
+
+variable "instance_public_ssh_key" {
+    description = "The SSH Key of the GCP instance"
+}
+
+variable "instance_public_ssh_user" {
+    description = "The SSH user of the GCP instance"
+}

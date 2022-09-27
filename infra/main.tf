@@ -63,8 +63,11 @@ resource "google_compute_instance" "main" {
 
   }
   
-  metadata_startup_script = local.init_script
-
+  metadata = {
+    startup-script = local.init_script
+    ssh-keys = "${var.instance_public_ssh_user}:${var.instance_public_ssh_key}"
+  }
+  
   network_interface {
     subnetwork = google_compute_subnetwork.main.self_link
     access_config {
