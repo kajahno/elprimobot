@@ -178,6 +178,27 @@ client.once("ready", async () => {
 
     await channel.send({ content: "**Leetcode Weekly**", embeds: [weeklyProblemMessage] })
 
+    // Get Stats
+    // Server Members
+    //console.log(client.guilds.cache);
+    let dominationGuild = client.guilds.resolve(config.GUILD_ID);
+    console.log(dominationGuild);
+    //console.log(dominationGuild.members.cache);
+    let members = await dominationGuild.members.fetch();
+    console.log(members)
+
+    // for (let [id, member] of dominationGuild.members.cache) {
+    //     console.log(member.user.username);
+    // }
+
+
+    // Get Channels
+    // for (let [id, channel] of client.channels.cache) {
+    //     if (channel.guildId == config.GUILD_ID 
+    //         && channel.type === 'GUILD_TEXT') {
+    //         console.log(channel);
+    //     } 
+    // }
     // Close the client websocket connection and unblock program
     client.destroy();
 
