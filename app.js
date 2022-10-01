@@ -11,6 +11,8 @@ const config = {
     PUBLIC_KEY: process.env.PUBLIC_KEY || undefined,
 };
 
+let disable_leetcode = false;
+
 // Globals
 const LEETCODE_URL = "https://leetcode.com"
 
@@ -59,7 +61,7 @@ const dailyGetLeetcodeData = async _ => {
         compress: true,
     })
 
-    if (response.status !== 200){
+    if (response.status !== 200) {
         console.error("could not fetch: ", response.status)
         return
     }
@@ -109,20 +111,19 @@ const weeklyGetLeetcodeData = async _ => {
         compress: true,
     })
 
-    if (response.status !== 200){
+    if (response.status !== 200) {
         console.error("could not fetch: ", response.status)
         return
     }
     return response.json()
 }
 
-
-
-// When the client is ready, run this code (only once)
-client.once("ready", async () => {
-
+let post_daily_leetcode = async () => {
+    if (disable_leetcode) {
+        return;
+    }
     const dailyLeetcodeData = await dailyGetLeetcodeData();
-    if (! dailyLeetcodeData ) {
+    if (!dailyLeetcodeData) {
         console.error("there's no data available")
         return
     }
@@ -131,7 +132,7 @@ client.once("ready", async () => {
     console.log(dailyProblemData)
 
     const weeklyLeetcodeData = await weeklyGetLeetcodeData();
-    if (! weeklyLeetcodeData ) {
+    if (!weeklyLeetcodeData) {
         console.error("there's no data available")
         return
     }
@@ -142,7 +143,7 @@ client.once("ready", async () => {
     const oneDay = 24 * 60 * 60 * 1000; //this is a day expressed in milliseconds
     const now = new Date();
     const weeklyChangeDate = Date.parse(lastWeeklyProblemData.date) + oneDay * 7;
-    const weeklyRemainingDays = Math.round(Math.abs((weeklyChangeDate - now)/oneDay));
+    const weeklyRemainingDays = Math.round(Math.abs((weeklyChangeDate - now) / oneDay));
     const weeklyRemainingDaysMessage = weeklyRemainingDays + (weeklyRemainingDays >= 2 ? " days" : " day");
 
     console.log(lastWeeklyProblemData);
@@ -153,7 +154,7 @@ client.once("ready", async () => {
         (channel) => channel.name === channelName
     );
 
-    if (!channel){
+    if (!channel) {
         console.error(`could not find Discord channel: ${channelName}`)
         return
     }
@@ -178,14 +179,21 @@ client.once("ready", async () => {
 
     await channel.send({ content: "**Leetcode Weekly**", embeds: [weeklyProblemMessage] })
 
+}
+
+let post_stats = async () => {
     // Get Stats
     // Server Members
     //console.log(client.guilds.cache);
     let dominationGuild = client.guilds.resolve(config.GUILD_ID);
-    console.log(dominationGuild);
-    //console.log(dominationGuild.members.cache);
-    let members = await dominationGuild.members.fetch();
-    console.log(members)
+    // console.log(dominationGuild);
+    // let channels 
+    // console.log(dominationGuild.members.cache);
+    // TODO: this is hanging
+    // let members = await dominationGuild.members.fetch();
+    // console.log(members)
+    // let members = await dominationGuild.members.list();
+    // console.log(members)
 
     // for (let [id, member] of dominationGuild.members.cache) {
     //     console.log(member.user.username);
@@ -193,12 +201,28 @@ client.once("ready", async () => {
 
 
     // Get Channels
-    // for (let [id, channel] of client.channels.cache) {
-    //     if (channel.guildId == config.GUILD_ID 
-    //         && channel.type === 'GUILD_TEXT') {
-    //         console.log(channel);
-    //     } 
+    let channels = await dominationGuild.channels.fetch();
+    let print_id = '937446029211615292';
+    let random = channels.get(print_id);
+    let messages = await random.messages.fetch({ limit: 100 });
+    console.log(messages.size);
+    // for( let message of messages) {
+    //     console.log(message);
     // }
+    // console.log(random.messages);
+    // for (let [id, channel] of channels) {
+    //     console.log(id,  channel.name);
+    //     if (id === print_id){
+    //         console.log(channel);
+    //     }
+    // }
+}
+
+// When the client is ready, run this code (only once)
+client.once("ready", async () => {
+    await post_daily_leetcode();
+    await post_stats();
+
     // Close the client websocket connection and unblock program
     client.destroy();
 
