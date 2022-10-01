@@ -11,7 +11,7 @@ const config = {
     PUBLIC_KEY: process.env.PUBLIC_KEY || undefined,
 };
 
-let disable_leetcode = false;
+let disable_leetcode = true;
 
 // Globals
 const LEETCODE_URL = "https://leetcode.com"
@@ -181,41 +181,82 @@ let post_daily_leetcode = async () => {
 
 }
 
+let get_inital_stats = (message) => {
+    // let's just return an empty object, but eventually
+    // we want to return the stats based on the latest update
+    /*
+   let stats = {
+       username1: {
+           messages: 5, 
+           words: 20, 
+           letters: 150
+       }
+   }
+   */
+
+    return {};
+}
+
 let post_stats = async () => {
     // Get Stats
     // Server Members
-    //console.log(client.guilds.cache);
     let dominationGuild = client.guilds.resolve(config.GUILD_ID);
-    // console.log(dominationGuild);
-    // let channels 
-    // console.log(dominationGuild.members.cache);
-    // TODO: this is hanging
     // let members = await dominationGuild.members.fetch();
-    // console.log(members)
-    // let members = await dominationGuild.members.list();
-    // console.log(members)
-
     // for (let [id, member] of dominationGuild.members.cache) {
     //     console.log(member.user.username);
     // }
-
-
     // Get Channels
     let channels = await dominationGuild.channels.fetch();
-    let print_id = '937446029211615292';
-    let random = channels.get(print_id);
-    let messages = await random.messages.fetch({ limit: 100 });
-    console.log(messages.size);
-    // for( let message of messages) {
-    //     console.log(message);
-    // }
-    // console.log(random.messages);
-    // for (let [id, channel] of channels) {
-    //     console.log(id,  channel.name);
-    //     if (id === print_id){
-    //         console.log(channel);
-    //     }
-    // }
+    // can we build this one based on time?
+    // https://discord.js.org/#/docs/discord.js/main/typedef/Snowflake
+    // number of milliseconds since Discord epoch
+    // TODO: we might not need this message if we can calculate last X days
+    let stat_message_id = '1025305892339589231';
+    // we're going to use the #motivation channel for these updates
+    // find last message with the stats
+    // TODO: get the message and call this function
+    let stats = get_inital_stats(null);
+    let messages = [];
+    for (let [id, channel] of channels) {
+        // console.log(channel);
+        if (channel.type === 'GUILD_TEXT') {
+            // we don't think we'll have more than 5k messages since the last update
+            messages.push(...await channel.messages.fetch({ limit: 5, after: stat_message_id }));
+        }
+    }
+
+    for (let [id, message] of messages) {
+        let username = message.author.username;
+        let user_stats = stats[username] = stats[username] || {
+            posts: 0,
+            words: 0,
+            letters: 0
+        };
+        user_stats.posts++;
+        user_stats.words += message.content.split(' ').length;
+        user_stats.letters += message.content.length;
+    }
+    console.log(stats)
+
+    const dailyStats = new MessageEmbed()
+        .setColor('#FFBF00')
+        .setTitle("Today's Stats")
+    dailyStats.addFields(
+        ...[...Object.keys(stats).map(username => [
+            { name: 'username', value: username, inline: true },
+            { name: 'posts', value: `${stats[username].posts}`, inline: true },
+            { name: 'words', value: stats[username].words.toString(), inline: true },
+            { name: 'letters', value: stats[username].letters.toString() }
+        ])]);
+
+
+    // TODO: Change to MOTIVATION_CHANNEL
+    const channelName = process.env.LEETCODE_CHALLENGES_CHANNEL || undefined;
+    const channel = client.channels.cache.find(
+        (channel) => channel.name === channelName
+    );
+
+    await channel.send({ content: "**Hello**", embeds: [dailyStats] });
 }
 
 // When the client is ready, run this code (only once)
