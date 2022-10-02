@@ -2,6 +2,10 @@
 
 Has all required resources in the cloud to run the project
 
+## Requirements
+* Need to configure a GCP bucket to be used as terraform backend
+* Configure backend as per in the sample file
+
 ## Setup
 
 * Download and install [terraform 1.2](https://www.terraform.io/downloads)

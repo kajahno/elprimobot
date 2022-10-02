@@ -3,3 +3,4 @@ credentials.json
 *.tfstate*
 .terraform.lock*
 *.auto.tfvars
+backend.tf
