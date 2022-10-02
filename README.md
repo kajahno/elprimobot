@@ -37,3 +37,4 @@ The commands are included in package.json.
 ## Deploying
 
 Currently the assumption is that the target is configured using SSH (either using a config file or an agent).
+

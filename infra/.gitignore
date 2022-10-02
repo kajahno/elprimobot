@@ -1,0 +1,6 @@
+credentials.json
+.terraform
+*.tfstate*
+.terraform.lock*
+*.auto.tfvars
+backend.tf
