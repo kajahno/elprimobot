@@ -11,36 +11,30 @@ It's a bot to help us manage our Discord
 ```bash
 npm install
 ```
+* On the discord side: 
+  * bot to be configured as explained in [here](https://discord.com/developers/docs/getting-started)
+  * A server with the app running
+  * The callback URL configured (we used nginx with letsencrypt)
 
-# Configuring environment
+## Configuring environment
 
 Copy .env.sample, rename it to .env and replace the placeholders
 
-# Running the app
+## Running the app
 
 ```bash
 node app.js
 ```
 
-# Packaging
+## Packaging
 
 We use [pkg](https://www.npmjs.com/package/pkg) to create a static binary, platform agnostic.
 
-* Install pkg but don't save it in package.json:
-```bash
-npm install --no-save pkg
-```
-* Build the executables:
-```bash
-npx pkg -t node16-linuxstatic-x64,node16-win-x64  -o elprimobot app.js
-```
+Now there's a problem with pkg: it doesn't compile ES6, and that's what we're using. The solution for now is to use babel as a transpiler to convert all the code to ES5, so pkg can work with it.
 
-# Deploying
+The commands are included in package.json.
 
-* Use rsync and send using compression, and incremental changes: it saves bandwidth (we need to save because we have a limit in the instance type in GCP)
+## Deploying
 
-```bash
-rsync -e "ssh -i [the-ssh-key] -p [the-ssh-port]" -avz [binary] [username]@[host]:[path/to/dir]
-```
+Currently the assumption is that the target is configured using SSH (either using a config file or an agent).
 
-> Note: rsync must be installed in the remote host

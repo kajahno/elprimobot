@@ -3,20 +3,29 @@
   "version": "1.0.0",
   "description": "",
   "main": "app.js",
-  "type": "commonjs",
+  "type": "module",
   "scripts": {
     "start": "node app.js",
+    "build": "babel . --ignore node_modules,es5-packaged,pupeteer --out-dir es5-packaged",
+    "package": "npx pkg -t node16-linuxstatic-x64,node16-win-x64 -o elprimobot es5-packaged/app.js",
+    "deploy": "rsync  -avz elprimobot-linuxstatic elprimobot:~/development/",
     "dev": "nodemon app.js"
   },
-  "author": "Shay DeWael",
+  "author": "Karl Jahn",
   "license": "MIT",
   "dependencies": {
     "cron": "^2.0.0",
+    "discord-interactions": "^3.2.0",
     "discord.js": "^13.8.1",
     "dotenv": "^16.0.1",
+    "express": "^4.18.1",
     "node-fetch": "^2.6.7"
   },
   "devDependencies": {
-    "eslint": "^8.19.0"
+    "@babel/cli": "^7.19.3",
+    "@babel/core": "^7.19.3",
+    "@babel/preset-env": "^7.19.3",
+    "eslint": "^8.19.0",
+    "pkg": "^5.8.0"
   }
 }

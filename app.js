@@ -1,188 +1,204 @@
-require("dotenv").config();
+import "dotenv/config";
 
-const { time } = require("cron");
-const { Client, Intents, MessageEmbed } = require("discord.js");
-const fetch = require("node-fetch");
+import { CronJob } from 'cron';
+import express from 'express';
+import {
+    InteractionType,
+    InteractionResponseType,
+    InteractionResponseFlags,
+    MessageComponentTypes,
+    ButtonStyleTypes,
+} from 'discord-interactions';
+import { config, VerifyDiscordRequest, getRandomEmoji, DiscordRequest, initializeDiscordClient, postDailyLeetcodeMessage } from './utils.js';
+import { getShuffledOptions, getResult } from './game.js';
+import {
+    CHALLENGE_COMMAND,
+    TEST_COMMAND,
+    HasGuildCommands,
+} from './commands.js';
 
-const config = {
-    APP_ID: process.env.APP_ID || undefined,
-    GUILD_ID: process.env.GUILD_ID || undefined,
-    DISCORD_TOKEN: process.env.DISCORD_TOKEN || undefined,
-    PUBLIC_KEY: process.env.PUBLIC_KEY || undefined,
-};
+// Create an express app
+const app = express();
+// Get port, or default to 3000
+const PORT = process.env.PORT || 3000;
+// Parse request body and verifies incoming requests using discord-interactions package
+app.use(express.json({ verify: VerifyDiscordRequest(process.env.PUBLIC_KEY) }));
 
-// Globals
-const LEETCODE_URL = "https://leetcode.com"
+// Store for in-progress games. In production, you'd want to use a DB
+const activeGames = {};
 
-// Create a new client instance
-const client = new Client({ intents: [Intents.FLAGS.GUILDS] });
+/**
+ * Client commands that run recurrently (Crons)
+ */
+initializeDiscordClient();
+const job = new CronJob(
+    '30 0 * * * *',
+    postDailyLeetcodeMessage,
+    null, // onComplete
+    true, // autostart
+    null, // timeZone
+    null, // context
+    null, // runOnInit
+    0,    //utcOffset
+);
 
-const dailyGetLeetcodeData = async _ => {
+/**
+ * Interactions endpoint URL where Discord will send HTTP requests
+ */
+app.post('/interactions', async function (req, res) {
+    // Interaction type and data
+    const { type, id, data } = req.body;
 
-    const data = {
-        query: `
-    query questionOfToday {
-        activeDailyCodingChallengeQuestion {
-          date
-          userStatus
-          link
-          question {
-            acRate
-            difficulty
-            freqBar
-            frontendQuestionId: questionFrontendId
-            isFavor
-            paidOnly: isPaidOnly
-            status
-            title
-            titleSlug
-            hasVideoSolution
-            hasSolution
-            topicTags {
-              name
-              id
-              slug
-            }
-          }
+    /**
+     * Handle verification requests
+     */
+    if (type === InteractionType.PING) {
+        return res.send({ type: InteractionResponseType.PONG });
+    }
+
+    /**
+     * Handle slash command requests
+     * See https://discord.com/developers/docs/interactions/application-commands#slash-commands
+     */
+    if (type === InteractionType.APPLICATION_COMMAND) {
+        const { name } = data;
+
+        // "test" guild command
+        if (name === 'test') {
+            // Send a message into the channel where command was triggered from
+            return res.send({
+                type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+                data: {
+                    // Fetches a random emoji to send from a helper function
+                    content: 'hello world ' + getRandomEmoji(),
+                },
+            });
         }
-      }`,
-        variables: {}
+        // "challenge" guild command
+        if (name === 'challenge' && id) {
+            const userId = req.body.member.user.id;
+            // User's object choice
+            const objectName = req.body.data.options[0].value;
+
+            // Create active game using message ID as the game ID
+            activeGames[id] = {
+                id: userId,
+                objectName,
+            };
+
+            return res.send({
+                type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+                data: {
+                    // Fetches a random emoji to send from a helper function
+                    content: `Rock papers scissors challenge from <@${userId}>`,
+                    components: [
+                        {
+                            type: MessageComponentTypes.ACTION_ROW,
+                            components: [
+                                {
+                                    type: MessageComponentTypes.BUTTON,
+                                    // Append the game ID to use later on
+                                    custom_id: `accept_button_${req.body.id}`,
+                                    label: 'Accept',
+                                    style: ButtonStyleTypes.PRIMARY,
+                                },
+                            ],
+                        },
+                    ],
+                },
+            });
+        }
     }
 
-    const response = await fetch(`${LEETCODE_URL}/graphql/`, {
-        method: "POST",
-        body: JSON.stringify(data),
-        headers: {
-            "Content-Type": "application/json",
-            "Accept-Encoding": "gzip, deflate, br",
-        },
-        compress: true,
-    })
+    /**
+     * Handle requests from interactive components
+     * See https://discord.com/developers/docs/interactions/message-components#responding-to-a-component-interaction
+     */
+    if (type === InteractionType.MESSAGE_COMPONENT) {
+        // custom_id set in payload when sending message component
+        const componentId = data.custom_id;
 
-    if (response.status !== 200){
-        console.error("could not fetch: ", response.status)
-        return
-    }
-    return response.json()
-}
-
-const weeklyGetLeetcodeData = async _ => {
-
-    const now = new Date();
-
-    const data = {
-        query: `
-    query dailyCodingQuestionRecords($year: Int!, $month: Int!) {
-        dailyCodingChallengeV2(year: $year, month: $month) {
-            challenges {
-            date
-            userStatus
-            link
-            question {
-                questionFrontendId
-                title
-                titleSlug
+        if (componentId.startsWith('accept_button_')) {
+            // get the associated game ID
+            const gameId = componentId.replace('accept_button_', '');
+            // Delete message with token in request body
+            const endpoint = `webhooks/${process.env.APP_ID}/${req.body.token}/messages/${req.body.message.id}`;
+            try {
+                await res.send({
+                    type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+                    data: {
+                        // Fetches a random emoji to send from a helper function
+                        content: 'What is your object of choice?',
+                        // Indicates it'll be an ephemeral message
+                        flags: InteractionResponseFlags.EPHEMERAL,
+                        components: [
+                            {
+                                type: MessageComponentTypes.ACTION_ROW,
+                                components: [
+                                    {
+                                        type: MessageComponentTypes.STRING_SELECT,
+                                        // Append game ID
+                                        custom_id: `select_choice_${gameId}`,
+                                        options: getShuffledOptions(),
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                });
+                // Delete previous message
+                await DiscordRequest(endpoint, { method: 'DELETE' });
+            } catch (err) {
+                console.error('Error sending message:', err);
             }
-            }
-            weeklyChallenges {
-            date
-            userStatus
-            link
-            question {
-                questionFrontendId
-                title
-                titleSlug
-            }
+        } else if (componentId.startsWith('select_choice_')) {
+            // get the associated game ID
+            const gameId = componentId.replace('select_choice_', '');
+
+            if (activeGames[gameId]) {
+                // Get user ID and object choice for responding user
+                const userId = req.body.member.user.id;
+                const objectName = data.values[0];
+                // Calculate result from helper function
+                const resultStr = getResult(activeGames[gameId], {
+                    id: userId,
+                    objectName,
+                });
+
+                // Remove game from storage
+                delete activeGames[gameId];
+                // Update message with token in request body
+                const endpoint = `webhooks/${process.env.APP_ID}/${req.body.token}/messages/${req.body.message.id}`;
+
+                try {
+                    // Send results
+                    await res.send({
+                        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+                        data: { content: resultStr },
+                    });
+                    // Update ephemeral message
+                    await DiscordRequest(endpoint, {
+                        method: 'PATCH',
+                        body: {
+                            content: 'Nice choice ' + getRandomEmoji(),
+                            components: [],
+                        },
+                    });
+                } catch (err) {
+                    console.error('Error sending message:', err);
+                }
             }
         }
-    }`,
-        variables: { year: now.getFullYear(), month: now.getMonth() + 1 }
     }
-
-    const response = await fetch(`${LEETCODE_URL}/graphql/`, {
-        method: "POST",
-        body: JSON.stringify(data),
-        headers: {
-            "Content-Type": "application/json",
-            "Accept-Encoding": "gzip, deflate, br",
-        },
-        compress: true,
-    })
-
-    if (response.status !== 200){
-        console.error("could not fetch: ", response.status)
-        return
-    }
-    return response.json()
-}
-
-
-
-// When the client is ready, run this code (only once)
-client.once("ready", async () => {
-
-    const dailyLeetcodeData = await dailyGetLeetcodeData();
-    if (! dailyLeetcodeData ) {
-        console.error("there's no data available")
-        return
-    }
-
-    const dailyProblemData = dailyLeetcodeData.data.activeDailyCodingChallengeQuestion;
-    console.log(dailyProblemData)
-
-    const weeklyLeetcodeData = await weeklyGetLeetcodeData();
-    if (! weeklyLeetcodeData ) {
-        console.error("there's no data available")
-        return
-    }
-
-    const weeklyProblemData = weeklyLeetcodeData.data.dailyCodingChallengeV2.weeklyChallenges;
-    const lastWeeklyProblemData = weeklyProblemData[weeklyProblemData.length - 1];
-
-    const oneDay = 24 * 60 * 60 * 1000; //this is a day expressed in milliseconds
-    const now = new Date();
-    const weeklyChangeDate = Date.parse(lastWeeklyProblemData.date) + oneDay * 7;
-    const weeklyRemainingDays = Math.round(Math.abs((weeklyChangeDate - now)/oneDay));
-    const weeklyRemainingDaysMessage = weeklyRemainingDays + (weeklyRemainingDays >= 2 ? " days" : " day");
-
-    console.log(lastWeeklyProblemData);
-
-    // Find channel
-    const channelName = process.env.LEETCODE_CHALLENGES_CHANNEL || undefined;
-    const channel = client.channels.cache.find(
-        (channel) => channel.name === channelName
-    );
-
-    if (!channel){
-        console.error(`could not find Discord channel: ${channelName}`)
-        return
-    }
-
-    const dailyProblemMessage = new MessageEmbed()
-        .setColor('#00FFFF')
-        .setTitle(`${dailyProblemData.question.frontendQuestionId}. ${dailyProblemData.question.title}`)
-        .setURL(`${LEETCODE_URL}${dailyProblemData.link}`)
-        .addFields(
-            { name: 'Difficulty', value: "```" + dailyProblemData.question.difficulty + "\n```", inline: true },
-            { name: 'Success rate', value: "```" + Number.parseFloat(dailyProblemData.question.acRate).toFixed(2) + "```", inline: true },
-        )
-
-    await channel.send({ content: "**Leetcode Daily**", embeds: [dailyProblemMessage] })
-
-    const weeklyProblemMessage = new MessageEmbed()
-        .setColor('#FFBF00')
-        .setTitle(`${lastWeeklyProblemData.question.questionFrontendId}. ${lastWeeklyProblemData.question.title}`)
-        .setURL(`${LEETCODE_URL}${lastWeeklyProblemData.link}`)
-        .addFields({ name: 'Remaining time', value: `${weeklyRemainingDaysMessage}`, inline: false })
-        .setFooter({ text: 'Time to code 🔥👨‍💻🔥' });
-
-    await channel.send({ content: "**Leetcode Weekly**", embeds: [weeklyProblemMessage] })
-
-    // Close the client websocket connection and unblock program
-    client.destroy();
-
 });
 
+app.listen(PORT, () => {
+    console.log('Listening on port', PORT);
 
-// Login to Discord with your client's token
-client.login() // This leaves the app blocking because it opens a ws connection to Discord, call client.destroy() somewhere else to close it
+    // Check if guild commands from commands.js are installed (if not, install them)
+    HasGuildCommands(config.APP_ID, config.GUILD_ID, [
+        TEST_COMMAND,
+        CHALLENGE_COMMAND,
+    ]);
+});
+
