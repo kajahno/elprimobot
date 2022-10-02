@@ -1,3 +1,7 @@
 node_modules
 .env
+# binaries generated
 elprimobot-*
+
+# packaged sources in es5
+es5-packaged
