@@ -1,0 +1,7 @@
+terraform {
+  backend "gcs" {
+    credentials  = {.JSON file with GCP credentials}
+    bucket  = {GCP bucket globally unique name}
+    prefix  = {Folders to create on the bucket before the state file}
+  }
+}
