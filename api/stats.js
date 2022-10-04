@@ -1,4 +1,5 @@
 import { config } from './../config.js';
+import { SnowflakeUtil, MessageEmbed } from "discord.js";
 
 export class Stats {
     constructor(discordClient) {
@@ -24,39 +25,14 @@ export class Stats {
     }
 
     async _buildStats(channels, after) {
-        let stats = initializeStats();
+        let stats = this.initializeStats();
 
-        for (let [_, channel] of channels) {
+        for (let channel of channels) {
             if (channel.type !== 'GUILD_TEXT') {
                 continue;
             }
             const messages = await channel.messages.fetch({ limit: 100, after: after })
-            for (let [_, message] of messages) {
-                let username = message.author.username;
-                let user_stats = stats[username] = stats[username] || {
-                    posts: 0,
-                    words: 0,
-                    letters: 0
-                };
-                user_stats.posts++;
-                user_stats.words += message.content.split(' ').length;
-                user_stats.letters += message.content.length;
-            }
-        }
-
-
-        return stats;
-    }
-
-    async _buildStats(channels, after) {
-        let stats = initializeStats();
-
-        for (let [_, channel] of channels) {
-            if (channel.type !== 'GUILD_TEXT') {
-                continue;
-            }
-            const messages = await channel.messages.fetch({ limit: 100, after: after })
-            for (let [_, message] of messages) {
+            for (let message of messages.values()) {
                 let username = message.author.username;
                 let user_stats = stats[username] = stats[username] || {
                     posts: 0,
@@ -80,7 +56,7 @@ export class Stats {
         today.setHours(0, 0, 0, 0);
         // https://discord.com/developers/docs/reference#snowflakes
         let midnight = SnowflakeUtil.generate(today);
-        let stats = await buildStats(channels, midnight);
+        let stats = await this._buildStats(channels.values(), midnight);
         console.log(stats);
 
         let postsValue = Object.keys(stats).map(username => `${username} (${stats[username].posts})`).join('\n');
@@ -91,11 +67,10 @@ export class Stats {
                 { name: '\u200B', value: '\u200B', inline: true },
                 { name: 'word (letters)', value: wordsValue, inline: true });
 
-        const channel = this.client.channels.cache.find(
+        const channel = channels.find(
             (channel) => channel.name === config.DEV_PRIMOBOT_CHANNEL
         );
 
         await channel.send({ content: "**Daily Stats**", embeds: [dailyStats] });
     }
-
 }
