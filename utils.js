@@ -1,16 +1,8 @@
-import 'dotenv/config';
 import fetch from 'node-fetch';
 import { verifyKey } from 'discord-interactions';
 import { Client, Intents, MessageEmbed } from "discord.js";
-
-
-export const config = {
-  APP_ID: process.env.APP_ID || undefined,
-  GUILD_ID: process.env.GUILD_ID || undefined,
-  DISCORD_TOKEN: process.env.DISCORD_TOKEN || undefined,
-  PUBLIC_KEY: process.env.PUBLIC_KEY || undefined,
-  LEETCODE_CHALLENGES_CHANNEL: process.env.LEETCODE_CHALLENGES_CHANNEL || undefined,
-};
+import { Stats } from './api/stats.js';
+import { config } from './config.js';
 
 export function VerifyDiscordRequest(clientKey) {
   return function (req, res, buf, encoding) {
@@ -182,6 +174,8 @@ export async function postDailyLeetcodeMessage() {
     console.error("discord client is not ready")
     return
   }
+
+  await new Stats(discordClient).postDailyStats();
 
   const dailyLeetcodeData = await dailyGetLeetcodeData();
   if (! dailyLeetcodeData ) {
