@@ -9,7 +9,8 @@ import {
     MessageComponentTypes,
     ButtonStyleTypes,
 } from 'discord-interactions';
-import { config, VerifyDiscordRequest, getRandomEmoji, DiscordRequest, initializeDiscordClient, postDailyLeetcodeMessage } from './utils.js';
+import { config } from './config.js';
+import { VerifyDiscordRequest, getRandomEmoji, DiscordRequest, initializeDiscordClient, postDailyLeetcodeMessage } from './utils.js';
 import { getShuffledOptions, getResult } from './game.js';
 import {
     CHALLENGE_COMMAND,
