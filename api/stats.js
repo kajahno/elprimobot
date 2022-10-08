@@ -68,7 +68,7 @@ export class Stats {
                 { name: 'word (letters)', value: wordsValue, inline: true });
 
         const channel = channels.find(
-            (channel) => channel.name === config.DEV_PRIMOBOT_CHANNEL
+            (channel) => channel.name === config.STATS_CHANNEL
         );
 
         await channel.send({ content: "**Daily Stats**", embeds: [dailyStats] });
