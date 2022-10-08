@@ -33,7 +33,7 @@ const activeGames = {};
  */
 initializeDiscordClient();
 const job = new CronJob(
-    '30 0 * * * *',
+    '30 0 0 * * *',
     postDailyLeetcodeMessage,
     null, // onComplete
     true, // autostart
