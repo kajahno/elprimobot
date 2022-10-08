@@ -175,6 +175,7 @@ export async function postDailyLeetcodeMessage() {
     return
   }
 
+  // TODO: create a postDaily which calls leetcode and stats
   await new Stats(discordClient).postDailyStats();
 
   const dailyLeetcodeData = await dailyGetLeetcodeData();
@@ -202,6 +203,9 @@ export async function postDailyLeetcodeMessage() {
   const weeklyRemainingDaysMessage = weeklyRemainingDays + (weeklyRemainingDays >= 2 ? " days" : " day");
 
   console.log(lastWeeklyProblemData);
+  
+  // TODO: refactor and call weekly update which includes leetcode and stats updates 
+  await new Stats(discordClient).postWeeklyStats();
 
   // Find channel
   const channelName = config.LEETCODE_CHALLENGES_CHANNEL || undefined;
