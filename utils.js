@@ -163,6 +163,7 @@ export async function initializeDiscordClient() {
 
   // When the client is ready, run this code (only once)
   discordClient.once("ready", async () => {
+      await new Stats(discordClient).postDailyStats();
       console.log("discord client is ready")
       DISCORD_CLIENT_READY = true;
   });

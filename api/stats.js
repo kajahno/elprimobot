@@ -12,22 +12,22 @@ export class Stats {
         Returns a snowflake which represents the time x days in the past
         https://discord.com/developers/docs/reference#snowflakes
     */
-    _generatDaySnowflake(days) {
+    _getSnowflakeFromDay = days => {
         let d = new Date();
         d.setHours(0, 0, 0, 0);
         d.setDate(d.getDate() + days);
         return SnowflakeUtil.generate(d);
     }
 
-    async _getStatsChannel() {
+    _getStatsChannel = async () => {
         let dominationGuild = this.client.guilds.resolve(config.GUILD_ID);
         return dominationGuild.channels.cache.find(
             (channel) => channel.name === config.STATS_CHANNEL
         );
     }
 
-    async _computeWeeklyStats() {
-        let sevenDaysAgo = this._generatDaySnowflake(-7);
+    _computeWeeklyStats = async () => {
+        let sevenDaysAgo = this._getSnowflakeFromDay(-7);
         let statsChannel = await this._getStatsChannel();
 
         let messages = await statsChannel.messages.fetch({ limit: 100, after: sevenDaysAgo });
@@ -48,7 +48,6 @@ export class Stats {
             let fields = message.embeds[0].fields;
             let firstColumn = fields[0].value.split('\n');
             let secondColumn = fields[2].value.split('\n');
-            console.log(firstColumn, secondColumn);
             let i = 0;
             while (i < firstColumn.length) {
                 let [username, posts] = firstColumn[i].split(' ');
@@ -64,10 +63,11 @@ export class Stats {
         return stats;
     }
 
-    async _computeDailyStats() {
+    _computeDailyStats = async () => {
         let dominationGuild = this.client.guilds.resolve(config.GUILD_ID);
         let channels = await dominationGuild.channels.fetch();
-        let after = this._generatDaySnowflake(-1);
+        let after = this._getSnowflakeFromDay(-1);
+        let stats = {};
 
         for (let channel of channels) {
             if (channel.type !== 'GUILD_TEXT') {
@@ -90,12 +90,18 @@ export class Stats {
         return stats;
     }
 
-    async _sendStatsChannel(stats, title, channel) {
+    _sendStatsChannel = async (stats, title) => {
+        if (!stats || !Object.keys(stats).length) {
+            // nothing to update
+            return;
+        }
         let postsValue = Object.keys(stats).map(username => `${username} (${stats[username].posts})`).join('\n');
         let wordsValue = Object.keys(stats).map(username => `${stats[username].words} (${stats[username].letters})`).join('\n');
         const dailyStats = new MessageEmbed()
             .setColor(0x0099FF).addFields(
                 { name: 'user (posts)', value: postsValue, inline: true },
+                // Add a blank field to the embed
+                // https://discordjs.guide/popular-topics/embeds.html#embed-preview
                 { name: '\u200B', value: '\u200B', inline: true },
                 { name: 'word (letters)', value: wordsValue, inline: true });
 
@@ -106,7 +112,8 @@ export class Stats {
     /*
         Collects all the messages in the last 24 hours and posts daily stats
     */
-    async postDailyStats() {
+    postDailyStats = async () => {
+        console.log('klk');
         let stats = await this._computeDailyStats();
         await this._sendStatsChannel(stats, "**Daily Stats**");
     }
@@ -115,7 +122,7 @@ export class Stats {
         Collects the last update per day for the last week
         and post the weekly stats
     */
-    async postWeeklyStats() {
+    postWeeklyStats = async () => {
         let stats = await this._computeWeeklyStats();
         await this._sendStatsChannel(stats, "**Weekly Stats**");
     }
