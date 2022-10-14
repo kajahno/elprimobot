@@ -4,11 +4,11 @@ import { capitalize, DiscordRequest } from './utils/utils.js';
 export async function HasGuildCommands(appId, guildId, commands) {
   if (guildId === '' || appId === '') return;
 
-  commands.forEach((c) => HasGuildCommand(appId, guildId, c));
+  commands.forEach((c) => VerifyGuildCommand(appId, guildId, c));
 }
 
 // Checks for a command
-async function HasGuildCommand(appId, guildId, command) {
+async function VerifyGuildCommand(appId, guildId, command) {
   // API endpoint to get and post guild commands
   const endpoint = `applications/${appId}/guilds/${guildId}/commands`;
 

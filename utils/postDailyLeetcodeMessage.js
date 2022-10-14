@@ -2,10 +2,12 @@ import { MessageEmbed } from 'discord.js';
 import discordClient, { isClientReady } from '../api/discord-client.js';
 import { Stats } from '../api/stats.js';
 import { config } from '../config.js';
-import utils from './index.js';
+import { weeklyGetLeetcodeData } from './graphql-queries/weeklyGetLeetcodeData.js';
+import { dailyGetLeetcodeData } from './graphql-queries/dailyGetLeetcodeData.js';
 
 const { LEETCODE_URL } = config;
-const { dailyGetLeetcodeData, weeklyGetLeetcodeData } = utils;
+
+// Leetcode helpers
 
 const fetchLeetCodeData = async () => {
   if (!isClientReady) {

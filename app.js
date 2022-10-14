@@ -18,7 +18,6 @@ import {
   DAILY_LEETCODE_CHALLANGE_COMMAND,
   HasGuildCommands,
 } from './commands.js';
-
 const {
   VerifyDiscordRequest,
   getRandomEmoji,

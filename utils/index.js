@@ -3,13 +3,11 @@ import {
   DiscordRequest,
   getRandomEmoji,
   capitalize,
-  dailyGetLeetcodeData,
-  weeklyGetLeetcodeData,
 } from './utils.js';
 import {
   postDailyLeetcodeMessage,
   generateDailyLeetcodeMessage,
-} from './postDailyLeetcodeMessage';
+} from './postDailyLeetcodeMessage.js';
 
 export default {
   generateDailyLeetcodeMessage,
@@ -18,6 +16,4 @@ export default {
   DiscordRequest,
   getRandomEmoji,
   capitalize,
-  dailyGetLeetcodeData,
-  weeklyGetLeetcodeData,
 };
