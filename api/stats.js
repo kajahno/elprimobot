@@ -69,7 +69,7 @@ export class Stats {
         let after = this._getSnowflakeFromDay(-1);
         let stats = {};
 
-        for (let channel of channels) {
+        for (let channel of channels.values()) {
             if (channel.type !== 'GUILD_TEXT') {
                 continue;
             }

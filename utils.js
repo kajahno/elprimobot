@@ -1,7 +1,6 @@
 import fetch from 'node-fetch';
 import { verifyKey } from 'discord-interactions';
 import { Client, Intents, MessageEmbed } from "discord.js";
-import { Stats } from './api/stats.js';
 import { config } from './config.js';
 
 export function VerifyDiscordRequest(clientKey) {
@@ -163,7 +162,6 @@ export async function initializeDiscordClient() {
 
   // When the client is ready, run this code (only once)
   discordClient.once("ready", async () => {
-      await new Stats(discordClient).postDailyStats();
       console.log("discord client is ready")
       DISCORD_CLIENT_READY = true;
   });
