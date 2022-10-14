@@ -80,3 +80,14 @@ export const CHALLENGE_COMMAND = {
   ],
   type: 1,
 };
+
+// Adhoc command for daily leetcode message
+export const DAILY_LEETCODE_CHALLANGE_COMMAND = {
+  name: 'daily-leetcode',
+  description: "Get today's leetcode challange",
+  options: [
+    {
+      type: 1,
+    },
+  ],
+};
