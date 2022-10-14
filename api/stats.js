@@ -113,7 +113,6 @@ export class Stats {
         Collects all the messages in the last 24 hours and posts daily stats
     */
     postDailyStats = async () => {
-        console.log('klk');
         let stats = await this._computeDailyStats();
         await this._sendStatsChannel(stats, "**Daily Stats**");
     }
