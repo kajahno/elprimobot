@@ -5,7 +5,7 @@ import {
   capitalize,
   dailyGetLeetcodeData,
   weeklyGetLeetcodeData,
-} from './utils';
+} from './utils.js';
 import {
   postDailyLeetcodeMessage,
   generateDailyLeetcodeMessage,
