@@ -10,7 +10,7 @@ import {
     ButtonStyleTypes,
 } from 'discord-interactions';
 import { config } from './config.js';
-import { VerifyDiscordRequest, getRandomEmoji, DiscordRequest, initializeDiscordClient, postDailyLeetcodeMessage } from './utils.js';
+import { VerifyDiscordRequest, getRandomEmoji, DiscordRequest, initializeDiscordClient, postDailyMessages } from './utils.js';
 import { getShuffledOptions, getResult } from './game.js';
 import {
     CHALLENGE_COMMAND,
@@ -34,7 +34,7 @@ const activeGames = {};
 initializeDiscordClient();
 const job = new CronJob(
     '30 0 0 * * *',
-    postDailyLeetcodeMessage,
+    postDailyMessages,
     null, // onComplete
     true, // autostart
     null, // timeZone
