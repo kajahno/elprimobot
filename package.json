@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node app.js",
-    "build": "babel . --ignore node_modules,es5-packaged,pupeteer --out-dir es5-packaged",
+    "build": "babel . --ignore node_modules,es5-packaged,puppeteer --out-dir es5-packaged",
     "package": "npx pkg -t node16-linuxstatic-x64,node16-win-x64 -o elprimobot es5-packaged/app.js",
     "deploy": "rsync  -avz elprimobot-linuxstatic elprimobot:~/elprimobot/",
     "dev": "nodemon app.js"
