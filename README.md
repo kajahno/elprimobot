@@ -22,6 +22,10 @@ npm install
   * A server with the app running
   * The callback URL configured (we used nginx with letsencrypt)
 
+# Rules
+
+* Please use camelCase for functions. 
+
 ## Configuring environment
 
 Copy .env.sample, rename it to .env and replace the placeholders
