@@ -1,6 +1,12 @@
 # Elprimobot
 
-It's a bot to help us manage our Discord
+It's a bot to help you manage Discord communities, especially those with programmers.
+
+## Features
+- Send the daily Leetcode challenge to a specific channel
+- Send the weekly Leetcode challenge to a specific channel
+- Daily and Weekly stats about the engagement of the community
+- Play rock, paper, scissors and more!
 
 ## Development
 
