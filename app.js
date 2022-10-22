@@ -10,12 +10,12 @@ import {
     ButtonStyleTypes,
 } from 'discord-interactions';
 import { config } from './config.js';
-import { VerifyDiscordRequest, getRandomEmoji, DiscordRequest, initializeDiscordClient, postDailyLeetcodeMessage } from './utils.js';
+import { verifyDiscordRequest, getRandomEmoji, discordRequest, initializeDiscordClient, postDailyLeetcodeMessage } from './utils.js';
 import { getShuffledOptions, getResult } from './game.js';
 import {
     CHALLENGE_COMMAND,
     TEST_COMMAND,
-    HasGuildCommands,
+    hasGuildCommands,
 } from './commands.js';
 
 // Create an express app
@@ -23,7 +23,7 @@ const app = express();
 // Get port, or default to 3000
 const PORT = process.env.PORT || 3000;
 // Parse request body and verifies incoming requests using discord-interactions package
-app.use(express.json({ verify: VerifyDiscordRequest(process.env.PUBLIC_KEY) }));
+app.use(express.json({ verify: verifyDiscordRequest(process.env.PUBLIC_KEY) }));
 
 // Store for in-progress games. In production, you'd want to use a DB
 const activeGames = {};
@@ -148,7 +148,7 @@ app.post('/interactions', async function (req, res) {
                     },
                 });
                 // Delete previous message
-                await DiscordRequest(endpoint, { method: 'DELETE' });
+                await discordRequest(endpoint, { method: 'DELETE' });
             } catch (err) {
                 console.error('Error sending message:', err);
             }
@@ -178,7 +178,7 @@ app.post('/interactions', async function (req, res) {
                         data: { content: resultStr },
                     });
                     // Update ephemeral message
-                    await DiscordRequest(endpoint, {
+                    await discordRequest(endpoint, {
                         method: 'PATCH',
                         body: {
                             content: 'Nice choice ' + getRandomEmoji(),
@@ -197,9 +197,8 @@ app.listen(PORT, () => {
     console.log('Listening on port', PORT);
 
     // Check if guild commands from commands.js are installed (if not, install them)
-    HasGuildCommands(config.APP_ID, config.GUILD_ID, [
+    hasGuildCommands(config.APP_ID, config.GUILD_ID, [
         TEST_COMMAND,
         CHALLENGE_COMMAND,
     ]);
 });
-

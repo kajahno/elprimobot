@@ -3,7 +3,7 @@ import { verifyKey } from 'discord-interactions';
 import { Client, Intents, MessageEmbed } from "discord.js";
 import { config } from './config.js';
 
-export function VerifyDiscordRequest(clientKey) {
+export function verifyDiscordRequest(clientKey) {
   return function (req, res, buf, encoding) {
     const signature = req.get('X-Signature-Ed25519');
     const timestamp = req.get('X-Signature-Timestamp');
@@ -16,7 +16,7 @@ export function VerifyDiscordRequest(clientKey) {
   };
 }
 
-export async function DiscordRequest(endpoint, options) {
+export async function discordRequest(endpoint, options) {
   // append endpoint to root API URL
   const url = 'https://discord.com/api/v10/' + endpoint;
   // Stringify payloads
