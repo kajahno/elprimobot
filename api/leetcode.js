@@ -1,6 +1,6 @@
-import * as leetcode from "./leetcode";
-import { config } from './config.js';
-import { MessageEmbed } from "discord.js";
+import { dailyGetLeetcodeData, weeklyGetLeetcodeData, URL } from './leetcode/index.js'; 
+import { config } from '../config.js';
+import { MessageEmbed } from 'discord.js';
 
 export class Leetcode {
     client
@@ -21,7 +21,7 @@ export class Leetcode {
         const message = new MessageEmbed()
             .setColor('#00FFFF')
             .setTitle(`${frontendQuestionId}. ${title}`)
-            .setURL(`${leetcode.URL}${link}`)
+            .setURL(`${URL}${link}`)
             .addFields(
                 { name: 'Difficulty', value: "```" + difficulty + "\n```", inline: true },
                 { name: 'Success rate', value: "```" + Number.parseFloat(acRate).toFixed(2) + "```", inline: true },
@@ -38,7 +38,7 @@ export class Leetcode {
         const weeklyProblemMessage = new MessageEmbed()
             .setColor('#FFBF00')
             .setTitle(`${questionFrontendId}. ${title}`)
-            .setURL(`${leetcode.URL}${link}`)
+            .setURL(`${URL}${link}`)
             .addFields({ name: 'Remaining time', value: `${remainingTimeMessage}`, inline: false })
             .setFooter({ text: 'Time to code 🔥👨‍💻🔥' });
 
@@ -54,14 +54,14 @@ export class Leetcode {
         Fetch the leetcode daily challenge and send a message to the channel
     */
     postDailyChallenge = async () => {
-        const { data: { activeDailyCodingChallengeQuestion } } = await leetcode.dailyGetLeetcodeData();
+        const { data: { activeDailyCodingChallengeQuestion } } = await dailyGetLeetcodeData();
         if (!activeDailyCodingChallengeQuestion) {
             // TODO: are we logging?
             console.error("Unable to fetch dailyGetLeetcodeData");
             return;
         }
 
-        let info = {
+        const info = {
             ...activeDailyCodingChallengeQuestion.question,
             link: activeDailyCodingChallengeQuestion.link,
         }
@@ -73,7 +73,7 @@ export class Leetcode {
         Fetch the leetcode weekly challenge and send a message to the channel
     */
     postWeeklyChallenge = async () => {
-        const { data: { dailyCodingChallengeV2: { weeklyChallenges } } } = await leetcode.weeklyGetLeetcodeData();
+        const { data: { dailyCodingChallengeV2: { weeklyChallenges } } } = await weeklyGetLeetcodeData();
         if (!weeklyChallenges) {
             // TODO: are we logging?
             console.error("Unable to fetch weeklyGetLeetcodeData");
@@ -87,7 +87,7 @@ export class Leetcode {
         const weeklyRemainingDays = Math.round(Math.abs((weeklyChangeDate - now)/oneDay));
         const remainingTimeMessage = weeklyRemainingDays + (weeklyRemainingDays >= 2 ? " days" : " day");
 
-        let info = {
+        const info = {
             ...lastWeeklyProblemData.question,
             link: lastWeeklyProblemData.link,
             remainingTimeMessage,

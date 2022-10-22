@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 import { verifyKey } from 'discord-interactions';
-import { Client, Intents, MessageEmbed } from "discord.js";
-import { Leetcode, Stats } from './api';
+import { Client, Intents } from 'discord.js';
+import { Leetcode, Stats } from './api/index.js';
 import { config } from './config.js';
 
 export function VerifyDiscordRequest(clientKey) {

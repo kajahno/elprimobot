@@ -1,3 +1,5 @@
+import fetch from 'node-fetch';
+
 const headers = {
     "Content-Type": "application/json",
     "Accept-Encoding": "gzip, deflate, br",

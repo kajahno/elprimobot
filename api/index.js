@@ -1,5 +1,5 @@
-import { Leetcode } from './leetcode'
-import { Stats } from './stats'
+import { Leetcode } from './leetcode.js'
+import { Stats } from './stats.js'
 
 export {
     Leetcode,
