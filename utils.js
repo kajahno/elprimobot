@@ -75,7 +75,4 @@ export async function postDailyMessages() {
   const leetcode = new Leetcode(discordClient);
   await leetcode.postDailyChallenge();
   await leetcode.postWeeklyChallenge();
-
-  const stats = new Stats(discordClient)
-  await stats.postDailyStats();
 }
