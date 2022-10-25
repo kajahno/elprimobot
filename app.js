@@ -17,6 +17,7 @@ import {
     TEST_COMMAND,
     HasGuildCommands,
 } from './commands.js';
+import { Stats } from './api/stats.js';
 
 // Create an express app
 const app = express();
@@ -32,6 +33,7 @@ const activeGames = {};
  * Client commands that run recurrently (Crons)
  */
 initializeDiscordClient();
+
 const job = new CronJob(
     '30 0 0 * * *',
     postDailyMessages,
@@ -41,6 +43,16 @@ const job = new CronJob(
     null, // context
     null, // runOnInit
     0,    //utcOffset
+);
+
+const dailyStatsJob = new CronJob(
+    '59 * * * * *',
+    new Stats().postDailyStats
+);
+
+const weeklyOnSundays = new CronJob(
+    '30 0 0 * * 0',
+    new Stats().postWeeklyStats
 );
 
 /**

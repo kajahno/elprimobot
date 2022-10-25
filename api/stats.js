@@ -1,11 +1,14 @@
 import { config } from './../config.js';
 import { SnowflakeUtil, MessageEmbed } from "discord.js";
+import { Discord } from "../api/discord.js";
 
-const removeParentheses = word => word.replace(/\(|\)/g, '');
 export class Stats {
-    constructor(discordClient) {
-        this.client = discordClient;
+    constructor() {
         this.stats = {};
+    }
+
+    _iniClient = async () => {
+        this.client = await Discord.getReadyInstance();
     }
 
     /*
@@ -46,17 +49,24 @@ export class Stats {
             collectedDays.add(key);
 
             let fields = message.embeds[0].fields;
-            let firstColumn = fields[0].value.split('\n');
-            let secondColumn = fields[2].value.split('\n');
+            let rows = fields[0].value.split('\n');
             let i = 0;
-            while (i < firstColumn.length) {
-                let [username, posts] = firstColumn[i].split(' ');
-                let [words, letters] = secondColumn[i].split(' ');
+            for (let row of rows) {
+                // "Winner Crespo (5 | 50 | 2500)"
+                let [username, values] = row[i].split('(');
+                if (!username || !values) {
+                    // we couldn't parse
+                    break;
+                }
+                // clean input
+                username = username.trim();
+                values = values.replaceAll(' ', '').replaceAll(')', '');
+
+                let [posts, words, letters] = values.split('|');
                 stats[username] = stats[username] || { posts: 0, words: 0, letters: 0 };
-                stats[username].posts += Number(removeParentheses(posts));
+                stats[username].posts += Number(posts);
                 stats[username].words += Number(words);
-                stats[username].letters += Number(removeParentheses(letters));
-                i++;
+                stats[username].letters += Number(letters);
             }
         }
 
@@ -95,15 +105,11 @@ export class Stats {
             // nothing to update
             return;
         }
-        let postsValue = Object.keys(stats).map(username => `${username} (${stats[username].posts})`).join('\n');
-        let wordsValue = Object.keys(stats).map(username => `${stats[username].words} (${stats[username].letters})`).join('\n');
+        
+        let postsValue = Object.keys(stats).map(username => `**${username}** **(** ${stats[username].posts} **|** ${stats[username].words} **|** ${stats[username].letters}** )**`).join('\n');
         const dailyStats = new MessageEmbed()
             .setColor(0x0099FF).addFields(
-                { name: 'user (posts)', value: postsValue, inline: true },
-                // Add a blank field to the embed
-                // https://discordjs.guide/popular-topics/embeds.html#embed-preview
-                { name: '\u200B', value: '\u200B', inline: true },
-                { name: 'word (letters)', value: wordsValue, inline: true });
+                { name: 'user (posts | words | letters)', value: postsValue, inline: true });
 
         let statsChannel = await this._getStatsChannel();
         await statsChannel.send({ content: title, embeds: [dailyStats] });
@@ -113,6 +119,7 @@ export class Stats {
         Collects all the messages in the last 24 hours and posts daily stats
     */
     postDailyStats = async () => {
+        await this._iniClient();
         let stats = await this._computeDailyStats();
         await this._sendStatsChannel(stats, "**Daily Stats**");
     }
@@ -122,6 +129,8 @@ export class Stats {
         and post the weekly stats
     */
     postWeeklyStats = async () => {
+        // TODO: test this works or weekly
+        await this._iniClient();
         let stats = await this._computeWeeklyStats();
         await this._sendStatsChannel(stats, "**Weekly Stats**");
     }

@@ -78,6 +78,4 @@ export async function postDailyMessages() {
 
   const stats = new Stats(discordClient)
   await stats.postDailyStats();
-  // TODO: refactor and call weekly update which includes leetcode and stats updates 
-  await stats.postWeeklyStats();
 }
