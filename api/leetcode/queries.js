@@ -1,4 +1,4 @@
-import fetch from 'node-fetch';
+import fetch from "node-fetch";
 
 const headers = {
     "Content-Type": "application/json",
@@ -44,7 +44,7 @@ export async function dailyGetLeetcodeData() {
         headers,
         compress: true,
     });
-    
+
     if (response.status !== 200) {
         console.error("could not fetch: ", response.status);
         return;
@@ -54,7 +54,7 @@ export async function dailyGetLeetcodeData() {
 
 export async function weeklyGetLeetcodeData() {
     const now = new Date();
-    
+
     const data = {
         query: `
             query dailyCodingQuestionRecords($year: Int!, $month: Int!) {
@@ -95,6 +95,6 @@ export async function weeklyGetLeetcodeData() {
         console.error("could not fetch: ", response.status);
         return;
     }
-    
+
     return response.json();
 }
