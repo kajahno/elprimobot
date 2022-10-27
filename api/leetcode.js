@@ -26,8 +26,8 @@ export class Leetcode {
             .setTitle(`${frontendQuestionId}. ${title}`)
             .setURL(`${URL}${link}`)
             .addFields(
-                { name: "Difficulty", value: `\`\`\`${difficulty}\n\`\`\``, inline: true },
-                { name: "Success rate", value: `\`\`\`${Number.parseFloat(acRate).toFixed(2)}\`\`\``, inline: true },
+                { name: "Difficulty", value: "```" + difficulty + "\n```", inline: true },
+                { name: "Success rate", value: "```" + Number.parseFloat(acRate).toFixed(2) + "```", inline: true },
             );
 
         if (!this.channel) {

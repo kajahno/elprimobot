@@ -19,6 +19,7 @@
         "consistent-return": "off",
         "no-await-in-loop": "off",
         "no-multi-assign": "off",
+        "prefer-template": "off",
         "import/extensions": [ "error", "always", { "ignorePackages": true} ],
         "no-underscore-dangle": 0,
         "indent": ["error", 4],
