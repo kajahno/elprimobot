@@ -5,8 +5,8 @@
   "main": "app.js",
   "type": "module",
   "scripts": {
-    "start": "node app.js",
-    "build": "babel . --ignore node_modules,es5-packaged,puppeteer --out-dir es5-packaged",
+    "start": "npx eslint . && node app.js",
+    "build": "npx eslint . && babel . --ignore node_modules,es5-packaged,puppeteer --out-dir es5-packaged",
     "package": "npx pkg -t node16-linuxstatic-x64,node16-win-x64 -o elprimobot es5-packaged/app.js",
     "deploy": "rsync  -avz elprimobot-linuxstatic elprimobot:~/elprimobot/",
     "dev": "nodemon app.js"
@@ -25,7 +25,9 @@
     "@babel/cli": "^7.19.3",
     "@babel/core": "^7.19.3",
     "@babel/preset-env": "^7.19.3",
-    "eslint": "^8.19.0",
+    "eslint": "^8.26.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.26.0",
     "pkg": "^5.8.0"
   }
 }

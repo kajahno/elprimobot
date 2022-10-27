@@ -1,5 +1,4 @@
-
-import 'dotenv/config';
+import "dotenv/config";
 
 export const config = {
     APP_ID: process.env.APP_ID || undefined,
@@ -8,4 +7,4 @@ export const config = {
     PUBLIC_KEY: process.env.PUBLIC_KEY || undefined,
     LEETCODE_CHALLENGES_CHANNEL: process.env.LEETCODE_CHALLENGES_CHANNEL || undefined,
     STATS_CHANNEL: process.env.STATS_CHANNEL || undefined,
-  };
+};
