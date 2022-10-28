@@ -46,6 +46,8 @@ export class Stats {
             collectedDays.add(key);
 
             const { fields } = message.embeds[0];
+            if (!fields[0]?.value || !fields[2]?.value) continue;
+
             const firstColumn = fields[0].value.split("\n");
             const secondColumn = fields[2].value.split("\n");
             let i = 0;

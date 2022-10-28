@@ -12,7 +12,7 @@ import {
 import { config } from "./config.js";
 import {
     VerifyDiscordRequest, getRandomEmoji, DiscordRequest,
-    initializeDiscordClient, postDailyMessages,
+    initializeDiscordClient, postDailyMessages, postWeeklyMessages,
 } from "./utils.js";
 import { getShuffledOptions, getResult } from "./game.js";
 import {
@@ -45,7 +45,19 @@ const job = new CronJob(
     null, // runOnInit
     0, // utcOffset
 );
-console.log("postDailyMessages has started and will next run at: ", job.nextDates(1)[0].toUTC(0).toISO());
+console.log("daily cron has started and will next run at: ", daily.nextDates(1)[0].toUTC(0).toISO());
+
+const weekly = new CronJob(
+    "0 0 20 * * 0",
+    postWeeklyMessages,
+    null, // onComplete
+    true, // autostart
+    null, // timeZone
+    null, // context
+    null, // runOnInit
+    0, // utcOffset
+);
+console.log("weekly has started and will next run at: ", weekly.nextDates(1)[0].toUTC(0).toISO());
 
 /**
  * Interactions endpoint URL where Discord will send HTTP requests

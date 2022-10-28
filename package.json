@@ -5,10 +5,12 @@
   "main": "app.js",
   "type": "module",
   "scripts": {
-    "start": "npx eslint . && node app.js",
-    "build": "npx eslint . && babel . --ignore node_modules,es5-packaged,puppeteer --out-dir es5-packaged",
+    "start": "./node_modules/.bin/eslint . && node app.js",
+    "build": "./node_modules/.bin/eslint . && babel . --ignore node_modules,es5-packaged,puppeteer --out-dir es5-packaged",
     "package": "npx pkg -t node16-linuxstatic-x64,node16-win-x64 -o elprimobot es5-packaged/app.js",
     "deploy": "rsync  -avz elprimobot-linuxstatic elprimobot:~/elprimobot/",
+    "lint": "./node_modules/.bin/eslint .",
+    "lint:fix": "./node_modules/.bin/eslint --fix .",
     "dev": "nodemon app.js"
   },
   "author": "Karl Jahn",
