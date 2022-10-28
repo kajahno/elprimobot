@@ -5,7 +5,7 @@ import { Leetcode, Stats } from "./api/index.js";
 import { config } from "./config.js";
 
 export function VerifyDiscordRequest(clientKey) {
-    return function (req, res, buf) {
+    return (req, res, buf) => {
         const signature = req.get("X-Signature-Ed25519");
         const timestamp = req.get("X-Signature-Timestamp");
 
@@ -73,12 +73,22 @@ export async function postDailyMessages() {
         return;
     }
 
+    console.log('postDailyMessages triggered at:', new Date(Date.now()).toUTCString(0))
     const leetcode = new Leetcode(discordClient);
     await leetcode.postDailyChallenge();
     await leetcode.postWeeklyChallenge();
 
     const stats = new Stats(discordClient);
     await stats.postDailyStats();
-    // TODO: refactor and call weekly update which includes leetcode and stats updates
+}
+
+export async function postWeeklyMessages() {
+    if (!DISCORD_CLIENT_READY) {
+        console.error("discord client is not ready");
+        return;
+    }
+    
+    console.log('postWeeklyMessages triggered at:', new Date(Date.now()).toUTCString(0))
+    const stats = new Stats(discordClient);
     await stats.postWeeklyStats();
 }
