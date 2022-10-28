@@ -9,6 +9,8 @@ import {
     MessageComponentTypes,
     ButtonStyleTypes,
 } from "discord-interactions";
+import yargs from "yargs";
+import { hideBin } from "yargs/helpers";
 import { config } from "./config.js";
 import {
     VerifyDiscordRequest, getRandomEmoji, DiscordRequest,
@@ -35,7 +37,7 @@ const activeGames = {};
  * Client commands that run recurrently (Crons)
  */
 initializeDiscordClient();
-const job = new CronJob(
+const daily = new CronJob(
     "30 0 0 * * *",
     postDailyMessages,
     null, // onComplete
@@ -210,12 +212,37 @@ app.post("/interactions", async (req, res) => {
     return res.status(404).send({ message: "Unknown action" });
 });
 
-app.listen(PORT, () => {
-    console.log("Listening on port", PORT);
+// app.listen(PORT, () => {
+//     console.log("Listening on port", PORT);
 
-    // Check if guild commands from commands.js are installed (if not, install them)
-    HasGuildCommands(config.APP_ID, config.GUILD_ID, [
-        TEST_COMMAND,
-        CHALLENGE_COMMAND,
-    ]);
+//     // Check if guild commands from commands.js are installed (if not, install them)
+//     HasGuildCommands(config.APP_ID, config.GUILD_ID, [
+//         TEST_COMMAND,
+//         CHALLENGE_COMMAND,
+//     ]);
+// });
+
+// CLI definition
+const y = yargs(hideBin(process.argv));
+y.option("verbose", {
+    alias: "v",
+    type: "boolean",
+    description: "Run with verbose logging",
 });
+y.command({
+    command: "leetcode",
+    describe: "Perform leetcode actions",
+    handler(argv) {
+        return y.command({
+            command: "send-daily-problem",
+            describe: "Sends daily problem to a discord channel",
+            handler(argv) {
+                ((argv) => {
+                    console.log("something", argv);
+                })();
+            },
+        });
+    },
+});
+
+y.parse(process.argv.slice(2));
