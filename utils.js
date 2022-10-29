@@ -55,7 +55,6 @@ export function capitalize(str) {
 const discordClient = new Client({ intents: [Intents.FLAGS.GUILDS] });
 let DISCORD_CLIENT_READY = false;
 export async function initializeDiscordClient() {
-    // Login to Discord with your client's token
     discordClient.login(); // This leaves the app blocking
     // because it opens a ws connection to Discord,
     // call discordClient.destroy() somewhere else to close it (if required)
@@ -65,6 +64,18 @@ export async function initializeDiscordClient() {
         console.log("discord client is ready");
         DISCORD_CLIENT_READY = true;
     });
+
+    // eslint-disable-next-line no-promise-executor-return
+    const snooze = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    let waitInterval = 100;
+
+    while (!DISCORD_CLIENT_READY) {
+        await snooze(100);
+        if (waitInterval % 1000 === 0) console.log("waiting for the client to be ready");
+        waitInterval += 100;
+    }
+
+    return discordClient;
 }
 
 export async function postDailyMessages() {
@@ -73,7 +84,7 @@ export async function postDailyMessages() {
         return;
     }
 
-    console.log('postDailyMessages triggered at:', new Date(Date.now()).toUTCString(0))
+    console.log("postDailyMessages triggered at:", new Date(Date.now()).toUTCString(0));
     const leetcode = new Leetcode(discordClient);
     await leetcode.postDailyChallenge();
     await leetcode.postWeeklyChallenge();
@@ -87,8 +98,8 @@ export async function postWeeklyMessages() {
         console.error("discord client is not ready");
         return;
     }
-    
-    console.log('postWeeklyMessages triggered at:', new Date(Date.now()).toUTCString(0))
+
+    console.log("postWeeklyMessages triggered at:", new Date(Date.now()).toUTCString(0));
     const stats = new Stats(discordClient);
     await stats.postWeeklyStats();
 }
