@@ -73,7 +73,7 @@ export async function postDailyMessages() {
         return;
     }
 
-    console.log('postDailyMessages triggered at:', new Date(Date.now()).toUTCString(0))
+    console.log("postDailyMessages triggered at:", new Date(Date.now()).toUTCString(0));
     const leetcode = new Leetcode(discordClient);
     await leetcode.postDailyChallenge();
     await leetcode.postWeeklyChallenge();
@@ -87,8 +87,8 @@ export async function postWeeklyMessages() {
         console.error("discord client is not ready");
         return;
     }
-    
-    console.log('postWeeklyMessages triggered at:', new Date(Date.now()).toUTCString(0))
+
+    console.log("postWeeklyMessages triggered at:", new Date(Date.now()).toUTCString(0));
     const stats = new Stats(discordClient);
     await stats.postWeeklyStats();
 }
