@@ -35,7 +35,7 @@ const activeGames = {};
  * Client commands that run recurrently (Crons)
  */
 initializeDiscordClient();
-const job = new CronJob(
+const daily = new CronJob(
     "30 0 0 * * *",
     postDailyMessages,
     null, // onComplete
