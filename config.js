@@ -7,4 +7,5 @@ export const config = {
     PUBLIC_KEY: process.env.PUBLIC_KEY || undefined,
     LEETCODE_CHALLENGES_CHANNEL: process.env.LEETCODE_CHALLENGES_CHANNEL || undefined,
     STATS_CHANNEL: process.env.STATS_CHANNEL || undefined,
+    BOTS: (process.env.BOTS || "elprimobot").split(","),
 };
