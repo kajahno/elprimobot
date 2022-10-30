@@ -11,8 +11,7 @@ import {
 } from "discord-interactions";
 import { config } from "./config.js";
 import {
-    VerifyDiscordRequest, getRandomEmoji, DiscordRequest,
-    initializeDiscordClient, postDailyMessages, postWeeklyMessages,
+    VerifyDiscordRequest, getRandomEmoji, DiscordRequest, postDailyMessages, postWeeklyMessages,
 } from "./utils.js";
 import { getShuffledOptions, getResult } from "./game.js";
 import {
@@ -34,7 +33,6 @@ const activeGames = {};
 /**
  * Client commands that run recurrently (Crons)
  */
-initializeDiscordClient();
 const daily = new CronJob(
     "30 0 0 * * *",
     postDailyMessages,
