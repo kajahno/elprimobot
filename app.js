@@ -14,11 +14,10 @@ import { hideBin } from "yargs/helpers";
 import { config } from "./config.js";
 
 import {
-    VerifyDiscordRequest, getRandomEmoji, DiscordRequest,
-    initializeDiscordClient, postDailyMessages, postWeeklyMessages,
+    VerifyDiscordRequest, getRandomEmoji, DiscordRequest, postDailyMessages, postWeeklyMessages,
 } from "./utils.js";
 import { getShuffledOptions, getResult } from "./game.js";
-import { Stats } from "./api/index.js";
+import { Stats, getDiscordClient } from "./api/index.js";
 import {
     CHALLENGE_COMMAND,
     TEST_COMMAND,
@@ -35,7 +34,7 @@ app.use(express.json({ verify: VerifyDiscordRequest(process.env.PUBLIC_KEY) }));
 // Store for in-progress games. In production, you'd want to use a DB
 const activeGames = {};
 
-const discordClient = await initializeDiscordClient();
+const discordClient = await getDiscordClient();
 
 /**
  * Client commands that run recurrently (Crons) and blocking
