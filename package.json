@@ -5,7 +5,8 @@
   "main": "app.js",
   "type": "module",
   "scripts": {
-    "start": "./node_modules/.bin/eslint . && node app.js",
+    "start": "node app.js",
+    "prodstart": "./node_modules/.bin/eslint . && node app.js",
     "build": "./node_modules/.bin/eslint . && babel . --ignore node_modules,es5-packaged,puppeteer --out-dir es5-packaged",
     "package": "./node_modules/.bin/pkg -t node16-linuxstatic-x64,node16-win-x64 -o elprimobot es5-packaged/app.js",
     "deploy": "rsync  -avz elprimobot-linuxstatic elprimobot:~/elprimobot/",
@@ -21,7 +22,8 @@
     "discord.js": "^13.8.1",
     "dotenv": "^16.0.1",
     "express": "^4.18.1",
-    "node-fetch": "^2.6.7"
+    "node-fetch": "^2.6.7",
+    "yargs": "^17.6.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.19.3",

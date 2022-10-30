@@ -9,11 +9,15 @@ import {
     MessageComponentTypes,
     ButtonStyleTypes,
 } from "discord-interactions";
+import yargs from "yargs";
+import { hideBin } from "yargs/helpers";
 import { config } from "./config.js";
+
 import {
     VerifyDiscordRequest, getRandomEmoji, DiscordRequest, postDailyMessages, postWeeklyMessages,
 } from "./utils.js";
 import { getShuffledOptions, getResult } from "./game.js";
+import { Stats, getDiscordClient } from "./api/index.js";
 import {
     CHALLENGE_COMMAND,
     TEST_COMMAND,
@@ -30,190 +34,235 @@ app.use(express.json({ verify: VerifyDiscordRequest(process.env.PUBLIC_KEY) }));
 // Store for in-progress games. In production, you'd want to use a DB
 const activeGames = {};
 
-/**
- * Client commands that run recurrently (Crons)
- */
-const daily = new CronJob(
-    "30 0 0 * * *",
-    postDailyMessages,
-    null, // onComplete
-    true, // autostart
-    null, // timeZone
-    null, // context
-    null, // runOnInit
-    0, // utcOffset
-);
-console.log("daily cron has started and will next run at: ", daily.nextDates(1)[0].toUTC(0).toISO());
-
-const weekly = new CronJob(
-    "0 0 20 * * 0",
-    postWeeklyMessages,
-    null, // onComplete
-    true, // autostart
-    null, // timeZone
-    null, // context
-    null, // runOnInit
-    0, // utcOffset
-);
-console.log("weekly has started and will next run at: ", weekly.nextDates(1)[0].toUTC(0).toISO());
+const discordClient = await getDiscordClient();
 
 /**
- * Interactions endpoint URL where Discord will send HTTP requests
+ * Client commands that run recurrently (Crons) and blocking
  */
-app.post("/interactions", async (req, res) => {
-    // Interaction type and data
-    const { type, id, data } = req.body;
+const runDaemon = async () => {
+    const daily = new CronJob(
+        "30 0 0 * * *",
+        postDailyMessages,
+        null, // onComplete
+        true, // autostart
+        null, // timeZone
+        null, // context
+        null, // runOnInit
+        0, // utcOffset
+    );
+    console.log("daily cron has started and will next run at: ", daily.nextDates(1)[0].toUTC(0).toISO());
+
+    const weekly = new CronJob(
+        "0 0 20 * * 0",
+        postWeeklyMessages,
+        null, // onComplete
+        true, // autostart
+        null, // timeZone
+        null, // context
+        null, // runOnInit
+        0, // utcOffset
+    );
+    console.log("weekly has started and will next run at: ", weekly.nextDates(1)[0].toUTC(0).toISO());
 
     /**
-     * Handle verification requests
+     * Interactions endpoint URL where Discord will send HTTP requests
      */
-    if (type === InteractionType.PING) {
-        return res.send({ type: InteractionResponseType.PONG });
-    }
+    app.post("/interactions", async (req, res) => {
+        // Interaction type and data
+        const { type, id, data } = req.body;
 
-    /**
-     * Handle slash command requests
-     * See https://discord.com/developers/docs/interactions/application-commands#slash-commands
-     */
-    if (type === InteractionType.APPLICATION_COMMAND) {
-        const { name } = data;
-
-        // "test" guild command
-        if (name === "test") {
-            // Send a message into the channel where command was triggered from
-            return res.send({
-                type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-                data: {
-                    // Fetches a random emoji to send from a helper function
-                    content: `hello world ${getRandomEmoji()}`,
-                },
-            });
+        /**
+         * Handle verification requests
+         */
+        if (type === InteractionType.PING) {
+            return res.send({ type: InteractionResponseType.PONG });
         }
-        // "challenge" guild command
-        if (name === "challenge" && id) {
-            const userId = req.body.member.user.id;
-            // User's object choice
-            const objectName = req.body.data.options[0].value;
 
-            // Create active game using message ID as the game ID
-            activeGames[id] = {
-                id: userId,
-                objectName,
-            };
+        /**
+         * Handle slash command requests
+         * See https://discord.com/developers/docs/interactions/application-commands#slash-commands
+         */
+        if (type === InteractionType.APPLICATION_COMMAND) {
+            const { name } = data;
 
-            return res.send({
-                type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-                data: {
-                    // Fetches a random emoji to send from a helper function
-                    content: `Rock papers scissors challenge from <@${userId}>`,
-                    components: [
-                        {
-                            type: MessageComponentTypes.ACTION_ROW,
-                            components: [
-                                {
-                                    type: MessageComponentTypes.BUTTON,
-                                    // Append the game ID to use later on
-                                    custom_id: `accept_button_${req.body.id}`,
-                                    label: "Accept",
-                                    style: ButtonStyleTypes.PRIMARY,
-                                },
-                            ],
-                        },
-                    ],
-                },
-            });
-        }
-    }
-
-    /**
-     * Handle requests from interactive components
-     * See https://discord.com/developers/docs/interactions/message-components#responding-to-a-component-interaction
-     */
-    if (type === InteractionType.MESSAGE_COMPONENT) {
-    // custom_id set in payload when sending message component
-        const componentId = data.custom_id;
-
-        if (componentId.startsWith("accept_button_")) {
-            // get the associated game ID
-            const gameId = componentId.replace("accept_button_", "");
-            // Delete message with token in request body
-            const endpoint = `webhooks/${process.env.APP_ID}/${req.body.token}/messages/${req.body.message.id}`;
-            try {
-                await res.send({
+            // "test" guild command
+            if (name === "test") {
+                // Send a message into the channel where command was triggered from
+                return res.send({
                     type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
                     data: {
                         // Fetches a random emoji to send from a helper function
-                        content: "What is your object of choice?",
-                        // Indicates it'll be an ephemeral message
-                        flags: InteractionResponseFlags.EPHEMERAL,
+                        content: `hello world ${getRandomEmoji()}`,
+                    },
+                });
+            }
+            // "challenge" guild command
+            if (name === "challenge" && id) {
+                const userId = req.body.member.user.id;
+                // User's object choice
+                const objectName = req.body.data.options[0].value;
+
+                // Create active game using message ID as the game ID
+                activeGames[id] = {
+                    id: userId,
+                    objectName,
+                };
+
+                return res.send({
+                    type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+                    data: {
+                        // Fetches a random emoji to send from a helper function
+                        content: `Rock papers scissors challenge from <@${userId}>`,
                         components: [
                             {
                                 type: MessageComponentTypes.ACTION_ROW,
                                 components: [
                                     {
-                                        type: MessageComponentTypes.STRING_SELECT,
-                                        // Append game ID
-                                        custom_id: `select_choice_${gameId}`,
-                                        options: getShuffledOptions(),
+                                        type: MessageComponentTypes.BUTTON,
+                                        // Append the game ID to use later on
+                                        custom_id: `accept_button_${req.body.id}`,
+                                        label: "Accept",
+                                        style: ButtonStyleTypes.PRIMARY,
                                     },
                                 ],
                             },
                         ],
                     },
                 });
-                // Delete previous message
-                await DiscordRequest(endpoint, { method: "DELETE" });
-            } catch (err) {
-                console.error("Error sending message:", err);
             }
-        } else if (componentId.startsWith("select_choice_")) {
-            // get the associated game ID
-            const gameId = componentId.replace("select_choice_", "");
+        }
 
-            if (activeGames[gameId]) {
-                // Get user ID and object choice for responding user
-                const userId = req.body.member.user.id;
-                const objectName = data.values[0];
-                // Calculate result from helper function
-                const resultStr = getResult(activeGames[gameId], {
-                    id: userId,
-                    objectName,
-                });
+        /**
+         * Handle requests from interactive components
+         * See https://discord.com/developers/docs/interactions/message-components#responding-to-a-component-interaction
+         */
+        if (type === InteractionType.MESSAGE_COMPONENT) {
+            // custom_id set in payload when sending message component
+            const componentId = data.custom_id;
 
-                // Remove game from storage
-                delete activeGames[gameId];
-                // Update message with token in request body
+            if (componentId.startsWith("accept_button_")) {
+                // get the associated game ID
+                const gameId = componentId.replace("accept_button_", "");
+                // Delete message with token in request body
                 const endpoint = `webhooks/${process.env.APP_ID}/${req.body.token}/messages/${req.body.message.id}`;
-
                 try {
-                    // Send results
                     await res.send({
                         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-                        data: { content: resultStr },
-                    });
-                    // Update ephemeral message
-                    await DiscordRequest(endpoint, {
-                        method: "PATCH",
-                        body: {
-                            content: `Nice choice ${getRandomEmoji()}`,
-                            components: [],
+                        data: {
+                            // Fetches a random emoji to send from a helper function
+                            content: "What is your object of choice?",
+                            // Indicates it'll be an ephemeral message
+                            flags: InteractionResponseFlags.EPHEMERAL,
+                            components: [
+                                {
+                                    type: MessageComponentTypes.ACTION_ROW,
+                                    components: [
+                                        {
+                                            type: MessageComponentTypes.STRING_SELECT,
+                                            // Append game ID
+                                            custom_id: `select_choice_${gameId}`,
+                                            options: getShuffledOptions(),
+                                        },
+                                    ],
+                                },
+                            ],
                         },
                     });
+                    // Delete previous message
+                    await DiscordRequest(endpoint, { method: "DELETE" });
                 } catch (err) {
                     console.error("Error sending message:", err);
                 }
+            } else if (componentId.startsWith("select_choice_")) {
+                // get the associated game ID
+                const gameId = componentId.replace("select_choice_", "");
+
+                if (activeGames[gameId]) {
+                    // Get user ID and object choice for responding user
+                    const userId = req.body.member.user.id;
+                    const objectName = data.values[0];
+                    // Calculate result from helper function
+                    const resultStr = getResult(activeGames[gameId], {
+                        id: userId,
+                        objectName,
+                    });
+
+                    // Remove game from storage
+                    delete activeGames[gameId];
+                    // Update message with token in request body
+                    const endpoint = `webhooks/${process.env.APP_ID}/${req.body.token}/messages/${req.body.message.id}`;
+
+                    try {
+                        // Send results
+                        await res.send({
+                            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+                            data: { content: resultStr },
+                        });
+                        // Update ephemeral message
+                        await DiscordRequest(endpoint, {
+                            method: "PATCH",
+                            body: {
+                                content: `Nice choice ${getRandomEmoji()}`,
+                                components: [],
+                            },
+                        });
+                    } catch (err) {
+                        console.error("Error sending message:", err);
+                    }
+                }
             }
         }
-    }
-    return res.status(404).send({ message: "Unknown action" });
+        return res.status(404).send({ message: "Unknown action" });
+    });
+
+    app.listen(PORT, () => {
+        console.log("Listening on port", PORT);
+
+        // Check if guild commands from commands.js are installed (if not, install them)
+        HasGuildCommands(config.APP_ID, config.GUILD_ID, [
+            TEST_COMMAND,
+            CHALLENGE_COMMAND,
+        ]);
+    });
+};
+
+// CLI definition
+const y = yargs(hideBin(process.argv));
+y.scriptName("elprimobot");
+y.option("verbose", {
+    alias: "v",
+    type: "boolean",
+    description: "Run with verbose logging",
+});
+y.command({
+    command: "leetcode-daily",
+    description: "Sends leetcode daily problem to a Discord channel",
+    handler: async () => {
+        await postDailyMessages();
+    },
+});
+y.command({
+    command: "stats-daily",
+    description: "Sends Discord users daily chat activity stats",
+    handler: async () => {
+        const stats = new Stats(discordClient);
+        await stats.postDailyStats();
+    },
+});
+y.command({
+    command: "stats-weekly",
+    description: "Sends Discord users weekly chat activity stats",
+    handler: async () => {
+        const stats = new Stats(discordClient);
+        await stats.postWeeklyStats();
+    },
+});
+y.command({
+    command: "daemon",
+    description: "Runs the all the features in blocking mode",
+    handler: async () => {
+        await runDaemon();
+    },
 });
 
-app.listen(PORT, () => {
-    console.log("Listening on port", PORT);
-
-    // Check if guild commands from commands.js are installed (if not, install them)
-    HasGuildCommands(config.APP_ID, config.GUILD_ID, [
-        TEST_COMMAND,
-        CHALLENGE_COMMAND,
-    ]);
-});
+y.parse(process.argv.slice(2));
