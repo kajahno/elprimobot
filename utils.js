@@ -1,7 +1,6 @@
 import fetch from "node-fetch";
 import { verifyKey } from "discord-interactions";
-import { Client, Intents } from "discord.js";
-import { Leetcode, Stats } from "./api/index.js";
+import { Leetcode, Stats, getDiscordClient } from "./api/index.js";
 import { config } from "./config.js";
 
 export function VerifyDiscordRequest(clientKey) {
@@ -52,43 +51,24 @@ export function capitalize(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-const discordClient = new Client({ intents: [Intents.FLAGS.GUILDS] });
-let DISCORD_CLIENT_READY = false;
-export async function initializeDiscordClient() {
-    // Login to Discord with your client's token
-    discordClient.login(); // This leaves the app blocking
-    // because it opens a ws connection to Discord,
-    // call discordClient.destroy() somewhere else to close it (if required)
-
-    // When the client is ready, run this code (only once)
-    discordClient.once("ready", async () => {
-        console.log("discord client is ready");
-        DISCORD_CLIENT_READY = true;
-    });
-}
-
 export async function postDailyMessages() {
-    if (!DISCORD_CLIENT_READY) {
-        console.error("discord client is not ready");
-        return;
-    }
-
+    const client = await getDiscordClient();
     console.log("postDailyMessages triggered at:", new Date(Date.now()).toUTCString(0));
-    const leetcode = new Leetcode(discordClient);
+
+    const leetcode = new Leetcode(client);
     await leetcode.postDailyChallenge();
     await leetcode.postWeeklyChallenge();
 
-    const stats = new Stats(discordClient);
+    const stats = new Stats(client);
     await stats.postDailyStats();
+    client.destroy();
 }
 
 export async function postWeeklyMessages() {
-    if (!DISCORD_CLIENT_READY) {
-        console.error("discord client is not ready");
-        return;
-    }
+    const client = await getDiscordClient();
 
     console.log("postWeeklyMessages triggered at:", new Date(Date.now()).toUTCString(0));
-    const stats = new Stats(discordClient);
+    const stats = new Stats(client);
     await stats.postWeeklyStats();
+    client.destroy();
 }
