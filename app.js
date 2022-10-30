@@ -34,8 +34,6 @@ app.use(express.json({ verify: VerifyDiscordRequest(process.env.PUBLIC_KEY) }));
 // Store for in-progress games. In production, you'd want to use a DB
 const activeGames = {};
 
-const discordClient = await getDiscordClient();
-
 /**
  * Client commands that run recurrently (Crons) and blocking
  */
@@ -226,43 +224,55 @@ const runDaemon = async () => {
     });
 };
 
-// CLI definition
-const y = yargs(hideBin(process.argv));
-y.scriptName("elprimobot");
-y.option("verbose", {
-    alias: "v",
-    type: "boolean",
-    description: "Run with verbose logging",
-});
-y.command({
-    command: "leetcode-daily",
-    description: "Sends leetcode daily problem to a Discord channel",
-    handler: async () => {
-        await postDailyMessages();
-    },
-});
-y.command({
-    command: "stats-daily",
-    description: "Sends Discord users daily chat activity stats",
-    handler: async () => {
-        const stats = new Stats(discordClient);
-        await stats.postDailyStats();
-    },
-});
-y.command({
-    command: "stats-weekly",
-    description: "Sends Discord users weekly chat activity stats",
-    handler: async () => {
-        const stats = new Stats(discordClient);
-        await stats.postWeeklyStats();
-    },
-});
-y.command({
-    command: "daemon",
-    description: "Runs the all the features in blocking mode",
-    handler: async () => {
-        await runDaemon();
-    },
-});
+async function main() {
+    const discordClient = await getDiscordClient();
+    // CLI definition
+    const y = yargs(hideBin(process.argv));
+    y.scriptName("elprimobot");
+    y.option("verbose", {
+        alias: "v",
+        type: "boolean",
+        description: "Run with verbose logging",
+    });
+    y.command({
+        command: "leetcode-daily",
+        description: "Sends leetcode daily problem to a Discord channel",
+        handler: async () => {
+            await postDailyMessages();
+        },
+    });
+    y.command({
+        command: "stats-daily",
+        description: "Sends Discord users daily chat activity stats",
+        handler: async () => {
+            const stats = new Stats(discordClient);
+            await stats.postDailyStats();
+        },
+    });
+    y.command({
+        command: "stats-weekly",
+        description: "Sends Discord users weekly chat activity stats",
+        handler: async () => {
+            const stats = new Stats(discordClient);
+            await stats.postWeeklyStats();
+        },
+    });
+    y.command({
+        command: "daemon",
+        description: "Runs the all the features in blocking mode",
+        handler: async () => {
+            await runDaemon();
+        },
+    });
 
-y.parse(process.argv.slice(2));
+    y.parse(process.argv.slice(2));
+}
+
+/**
+ * Nodejs has support for top level await, but pkg + babel doesn't seem to.
+ * We should update this once we could build binaries without using babel,
+ * that is, when pkg supports ES6.
+ */
+main()
+    .then(() => console.log("app finished successfuly"))
+    .catch((err) => console.error("the app couldn't start: ", err));
