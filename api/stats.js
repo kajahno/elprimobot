@@ -12,8 +12,6 @@ const getSnowflakeFromDay = (days) => {
     return SnowflakeUtil.generate(d);
 };
 
-const BOTS = ["elprimobot", "ChillBot"];
-
 export class Stats {
     constructor(discordClient) {
         this.client = discordClient;
@@ -110,7 +108,7 @@ export class Stats {
             // nothing to update
             return;
         }
-        const postsValue = Object.keys(stats).filter((name) => !BOTS.includes(name))
+        const postsValue = Object.keys(stats).filter((name) => !config.BOTS.includes(name))
             .map((username) => `**${username}** **(** ${stats[username].posts} **|** ${stats[username].words} **|** ${stats[username].letters}** )**`)
             .join("\n");
         const dailyStats = new MessageEmbed()
