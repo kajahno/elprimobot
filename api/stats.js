@@ -18,6 +18,21 @@ export class Stats {
         this.stats = {};
     }
 
+    _defaultStats = () => {
+        return { posts: 0, words: 0, letters: 0 };
+    }
+
+    _initStats = async (guild) => {
+        const members = await guild.members.fetch({ cache: false });
+        let stats = {};
+
+        for (let m of members.values()) {
+            stats[m.user.username] = this._defaultStats();
+        }
+
+        return stats;
+    }
+
     _getStatsChannel = async () => {
         const dominationGuild = this.client.guilds.resolve(config.GUILD_ID);
         return dominationGuild.channels.cache.find(
@@ -28,10 +43,10 @@ export class Stats {
     _computeWeeklyStats = async () => {
         const sevenDaysAgo = getSnowflakeFromDay(-7);
         const statsChannel = await this._getStatsChannel();
+        const stats = await this._initStats(statsChannel.guild);
 
         const messages = await statsChannel.messages.fetch({ limit: 100, after: sevenDaysAgo });
         const collectedDays = new Set();
-        const stats = {};
 
         for (const message of messages.values()) {
             const isBot = message.author.username === "elprimobot";
@@ -66,7 +81,7 @@ export class Stats {
                     // we couldn't parse
                     break;
                 }
-                stats[username] = stats[username] || { posts: 0, words: 0, letters: 0 };
+                stats[username] = stats[username] || this._defaultStats();
                 stats[username].posts += Number(posts);
                 stats[username].words += Number(words);
                 stats[username].letters += Number(letters);
@@ -79,8 +94,9 @@ export class Stats {
     _computeDailyStats = async () => {
         const dominationGuild = this.client.guilds.resolve(config.GUILD_ID);
         const channels = await dominationGuild.channels.fetch();
+        const stats = await this._initStats(dominationGuild);
+
         const oneDayAgo = getSnowflakeFromDay(-1);
-        const stats = {};
 
         for (const channel of channels.values()) {
             if (channel.type !== "GUILD_TEXT") {
@@ -103,21 +119,40 @@ export class Stats {
         return stats;
     };
 
-    _sendStatsChannel = async (stats, title) => {
-        if (!stats || !Object.keys(stats).length) {
+    _sendStatsChannel = async (serverStats, title) => {
+        if (!serverStats || !Object.keys(serverStats).length) {
             // nothing to update
             return;
         }
-        const postsValue = Object.keys(stats).filter((name) => !config.BOTS.includes(name))
-            .map((username) => `**${username}** **(** ${stats[username].posts} **|** ${stats[username].words} **|** ${stats[username].letters}** )**`)
+        let inactive = [];
+        let active = [];
+        for (let user in serverStats) {
+            if (config.BOTS.has(user)) {
+                continue;
+            }
+
+            if (serverStats[user].posts) {
+                active.push([user, serverStats[user]]);
+            } else {
+                inactive.push(user);
+            }
+        }
+        active.sort((a, b) => b[1].posts - a[1].posts);
+        inactive.sort((a, b) => a - b);
+
+        const postsValue = active.map(([username, stats]) => `**${username}** **(** ${stats.posts} **|** ${stats.words} **|** ${stats.letters}** )**`)
             .join("\n");
-        const dailyStats = new MessageEmbed()
+        const message = new MessageEmbed()
             .setColor(0x0099FF).addFields(
                 { name: "user (posts | words | letters)", value: postsValue, inline: true },
             );
 
+        if (inactive.length) {
+            message.addField("zero activity: ", inactive.join(', '));
+        }
+
         const statsChannel = await this._getStatsChannel();
-        await statsChannel.send({ content: title, embeds: [dailyStats] });
+        await statsChannel.send({ content: title, embeds: [message] });
     };
 
     /*
@@ -136,4 +171,5 @@ export class Stats {
         const stats = await this._computeWeeklyStats();
         await this._sendStatsChannel(stats, "**Weekly Stats**");
     };
+
 }
