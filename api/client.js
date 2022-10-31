@@ -1,6 +1,6 @@
 import { Client, Intents } from "discord.js";
 
-const instance = new Client({ intents: [Intents.FLAGS.GUILDS] });
+const instance = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MEMBERS] });
 
 // Indicates that discord is in the process of creating a new connection
 let initializing = false;
