@@ -12,12 +12,11 @@ import {
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { config } from "./config.js";
-
 import {
     VerifyDiscordRequest, getRandomEmoji, DiscordRequest, postDailyMessages, postWeeklyMessages,
 } from "./utils.js";
 import { getShuffledOptions, getResult } from "./game.js";
-import { Stats, getDiscordClient } from "./api/index.js";
+import { Stats, getDiscordClient, Leetcode } from "./api/index.js";
 import {
     CHALLENGE_COMMAND,
     TEST_COMMAND,
@@ -33,8 +32,6 @@ app.use(express.json({ verify: VerifyDiscordRequest(process.env.PUBLIC_KEY) }));
 
 // Store for in-progress games. In production, you'd want to use a DB
 const activeGames = {};
-
-const discordClient = await getDiscordClient();
 
 /**
  * Client commands that run recurrently (Crons) and blocking
@@ -238,23 +235,30 @@ y.command({
     command: "leetcode-daily",
     description: "Sends leetcode daily problem to a Discord channel",
     handler: async () => {
-        await postDailyMessages();
+        const client = await getDiscordClient();
+        const leetcode = new Leetcode(client);
+        await leetcode.postDailyChallenge();
+        client.destroy();
     },
 });
 y.command({
     command: "stats-daily",
     description: "Sends Discord users daily chat activity stats",
     handler: async () => {
-        const stats = new Stats(discordClient);
+        const client = await getDiscordClient();
+        const stats = new Stats(client);
         await stats.postDailyStats();
+        client.destroy();
     },
 });
 y.command({
     command: "stats-weekly",
     description: "Sends Discord users weekly chat activity stats",
     handler: async () => {
-        const stats = new Stats(discordClient);
+        const client = await getDiscordClient();
+        const stats = new Stats(client);
         await stats.postWeeklyStats();
+        client.destroy();
     },
 });
 y.command({
