@@ -22,6 +22,7 @@ import {
     TEST_COMMAND,
     HasGuildCommands,
 } from "./commands.js";
+import morganMiddleware from "./middleware/morgan.js";
 import logger from "./logging.js";
 
 // Create an express app
@@ -61,6 +62,8 @@ const runDaemon = async () => {
         0, // utcOffset
     );
     logger.info("weekly has started and will next run at: ", weekly.nextDates(1)[0].toUTC(0).toISO());
+
+    app.use(morganMiddleware);
 
     /**
      * Interactions endpoint URL where Discord will send HTTP requests
