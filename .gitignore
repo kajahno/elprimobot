@@ -5,3 +5,7 @@ elprimobot-*
 
 # packaged sources in es5
 es5-packaged
+
+# logging
+exceptions.log
+rejections.log

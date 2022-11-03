@@ -1,4 +1,5 @@
 import fetch from "node-fetch";
+import logger from "../../logging.js";
 
 const headers = {
     "Content-Type": "application/json",
@@ -46,7 +47,7 @@ export async function dailyGetLeetcodeData() {
     });
 
     if (response.status !== 200) {
-        console.error("could not fetch: ", response.status);
+        logger.error("could not fetch: ", response.status);
         return;
     }
     return response.json();
@@ -92,7 +93,7 @@ export async function weeklyGetLeetcodeData() {
     });
 
     if (response.status !== 200) {
-        console.error("could not fetch: ", response.status);
+        logger.error("could not fetch: ", response.status);
         return;
     }
 

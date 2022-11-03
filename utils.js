@@ -2,6 +2,7 @@ import fetch from "node-fetch";
 import { verifyKey } from "discord-interactions";
 import { Leetcode, Stats, getDiscordClient } from "./api/index.js";
 import { config } from "./config.js";
+import logger from "./logging.js";
 
 export function VerifyDiscordRequest(clientKey) {
     return (req, res, buf) => {
@@ -34,7 +35,7 @@ export async function DiscordRequest(endpoint, options) {
     // throw API errors
     if (!res.ok) {
         const data = await res.json();
-        console.log(res.status);
+        logger.info(res.status);
         throw new Error(JSON.stringify(data));
     }
     // return original response
@@ -53,7 +54,7 @@ export function capitalize(str) {
 
 export async function postDailyMessages() {
     const client = await getDiscordClient();
-    console.log("postDailyMessages triggered at:", new Date(Date.now()).toUTCString(0));
+    logger.info("postDailyMessages triggered at:", new Date(Date.now()).toUTCString(0));
 
     const leetcode = new Leetcode(client);
     await leetcode.postDailyChallenge();
@@ -61,14 +62,16 @@ export async function postDailyMessages() {
 
     const stats = new Stats(client);
     await stats.postDailyStats();
-    client.destroy();
+    logger.info("destroying discord client");
+    await client.destroy();
 }
 
 export async function postWeeklyMessages() {
     const client = await getDiscordClient();
 
-    console.log("postWeeklyMessages triggered at:", new Date(Date.now()).toUTCString(0));
+    logger.info("postWeeklyMessages triggered at:", new Date(Date.now()).toUTCString(0));
     const stats = new Stats(client);
     await stats.postWeeklyStats();
-    client.destroy();
+    logger.info("destroying discord client");
+    await client.destroy();
 }

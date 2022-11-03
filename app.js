@@ -22,6 +22,7 @@ import {
     TEST_COMMAND,
     HasGuildCommands,
 } from "./commands.js";
+import logger from "./logging.js";
 
 // Create an express app
 const app = express();
@@ -47,7 +48,7 @@ const runDaemon = async () => {
         null, // runOnInit
         0, // utcOffset
     );
-    console.log("daily cron has started and will next run at: ", daily.nextDates(1)[0].toUTC(0).toISO());
+    logger.info("daily cron has started and will next run at: ", daily.nextDates(1)[0].toUTC(0).toISO());
 
     const weekly = new CronJob(
         "0 0 20 * * 0",
@@ -59,7 +60,7 @@ const runDaemon = async () => {
         null, // runOnInit
         0, // utcOffset
     );
-    console.log("weekly has started and will next run at: ", weekly.nextDates(1)[0].toUTC(0).toISO());
+    logger.info("weekly has started and will next run at: ", weekly.nextDates(1)[0].toUTC(0).toISO());
 
     /**
      * Interactions endpoint URL where Discord will send HTTP requests
@@ -168,7 +169,7 @@ const runDaemon = async () => {
                     // Delete previous message
                     await DiscordRequest(endpoint, { method: "DELETE" });
                 } catch (err) {
-                    console.error("Error sending message:", err);
+                    logger.error("Error sending message:", err);
                 }
             } else if (componentId.startsWith("select_choice_")) {
                 // get the associated game ID
@@ -204,7 +205,7 @@ const runDaemon = async () => {
                             },
                         });
                     } catch (err) {
-                        console.error("Error sending message:", err);
+                        logger.error("Error sending message:", err);
                     }
                 }
             }
@@ -213,7 +214,7 @@ const runDaemon = async () => {
     });
 
     app.listen(PORT, () => {
-        console.log("Listening on port", PORT);
+        logger.log("Listening on port", PORT);
 
         // Check if guild commands from commands.js are installed (if not, install them)
         HasGuildCommands(config.APP_ID, config.GUILD_ID, [
@@ -248,7 +249,8 @@ y.command({
         const client = await getDiscordClient();
         const stats = new Stats(client);
         await stats.postDailyStats();
-        client.destroy();
+        logger.info("destroying client");
+        await client.destroy();
     },
 });
 y.command({
@@ -258,7 +260,8 @@ y.command({
         const client = await getDiscordClient();
         const stats = new Stats(client);
         await stats.postWeeklyStats();
-        client.destroy();
+        logger.info("destroying client");
+        await client.destroy();
     },
 });
 y.command({
