@@ -40,7 +40,7 @@ const activeGames = {};
  */
 const runDaemon = async () => {
     const daily = new CronJob(
-        "30 0 0 * * *",
+        config.DAILY_MESSAGE_CRON,
         postDailyMessages,
         null, // onComplete
         true, // autostart
@@ -49,10 +49,10 @@ const runDaemon = async () => {
         null, // runOnInit
         0, // utcOffset
     );
-    logger.info("daily cron has started and will next run at: ", daily.nextDates(1)[0].toUTC(0).toISO());
+    logger.info(`daily cron has started and will next run at: ${daily.nextDate().toUTC(0).toISO()}`);
 
     const weekly = new CronJob(
-        "0 0 20 * * 0",
+        config.WEEKLY_MESSAGE_CRON,
         postWeeklyMessages,
         null, // onComplete
         true, // autostart
@@ -61,7 +61,7 @@ const runDaemon = async () => {
         null, // runOnInit
         0, // utcOffset
     );
-    logger.info("weekly has started and will next run at: ", weekly.nextDates(1)[0].toUTC(0).toISO());
+    logger.info(`weekly has started and will next run at: ${weekly.nextDate().toUTC(0).toISO()}`);
 
     app.use(morganMiddleware);
 
@@ -145,7 +145,7 @@ const runDaemon = async () => {
                 // get the associated game ID
                 const gameId = componentId.replace("accept_button_", "");
                 // Delete message with token in request body
-                const endpoint = `webhooks/${process.env.APP_ID}/${req.body.token}/messages/${req.body.message.id}`;
+                const endpoint = `webhooks/${config.APP_ID}/${req.body.token}/messages/${req.body.message.id}`;
                 try {
                     await res.send({
                         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
@@ -191,7 +191,7 @@ const runDaemon = async () => {
                     // Remove game from storage
                     delete activeGames[gameId];
                     // Update message with token in request body
-                    const endpoint = `webhooks/${process.env.APP_ID}/${req.body.token}/messages/${req.body.message.id}`;
+                    const endpoint = `webhooks/${config.APP_ID}/${req.body.token}/messages/${req.body.message.id}`;
 
                     try {
                         // Send results
@@ -213,11 +213,10 @@ const runDaemon = async () => {
                 }
             }
         }
-        return res.status(404).send({ message: "Unknown action" });
     });
 
     app.listen(PORT, () => {
-        logger.log("Listening on port", PORT);
+        logger.info(`Listening on port: ${PORT}`);
 
         // Check if guild commands from commands.js are installed (if not, install them)
         HasGuildCommands(config.APP_ID, config.GUILD_ID, [
@@ -242,7 +241,7 @@ y.command({
         const client = await getDiscordClient();
         const leetcode = new Leetcode(client);
         await leetcode.postDailyChallenge();
-        client.destroy();
+        await client.destroy();
     },
 });
 y.command({

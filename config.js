@@ -8,4 +8,6 @@ export const config = {
     LEETCODE_CHALLENGES_CHANNEL: process.env.LEETCODE_CHALLENGES_CHANNEL || undefined,
     STATS_CHANNEL: process.env.STATS_CHANNEL || undefined,
     BOTS: new Set((process.env.BOTS || "elprimobot").split(",")),
+    DAILY_MESSAGE_CRON: process.env.DAILY_MESSAGE_CRON || undefined,
+    WEEKLY_MESSAGE_CRON: process.env.WEEKLY_MESSAGE_CRON || undefined,
 };

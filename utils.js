@@ -63,7 +63,6 @@ export async function postDailyMessages() {
     const stats = new Stats(client);
     await stats.postDailyStats();
     logger.info("destroying discord client");
-    await client.destroy();
 }
 
 export async function postWeeklyMessages() {
@@ -73,5 +72,4 @@ export async function postWeeklyMessages() {
     const stats = new Stats(client);
     await stats.postWeeklyStats();
     logger.info("destroying discord client");
-    await client.destroy();
 }
