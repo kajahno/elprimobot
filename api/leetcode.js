@@ -1,6 +1,9 @@
 import { MessageEmbed } from "discord.js";
 import { dailyGetLeetcodeData, weeklyGetLeetcodeData, URL } from "./leetcode/index.js";
 import { config } from "../config.js";
+import logger from "../logging.js";
+
+// const childLogger = logger.child({ component: "discord client" });
 
 export class Leetcode {
     client;
@@ -60,8 +63,7 @@ export class Leetcode {
     postDailyChallenge = async () => {
         const { data: { activeDailyCodingChallengeQuestion } } = await dailyGetLeetcodeData();
         if (!activeDailyCodingChallengeQuestion) {
-            // TODO: are we logging?
-            console.error("Unable to fetch dailyGetLeetcodeData");
+            logger.error("Unable to fetch dailyGetLeetcodeData");
             return;
         }
 
@@ -84,8 +86,7 @@ export class Leetcode {
             },
         } = await weeklyGetLeetcodeData();
         if (!weeklyChallenges) {
-            // TODO: are we logging?
-            console.error("Unable to fetch weeklyGetLeetcodeData");
+            logger.error("Unable to fetch weeklyGetLeetcodeData");
             return;
         }
 

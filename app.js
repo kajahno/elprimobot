@@ -22,6 +22,8 @@ import {
     TEST_COMMAND,
     HasGuildCommands,
 } from "./commands.js";
+import morganMiddleware from "./middleware/morgan.js";
+import logger from "./logging.js";
 
 // Create an express app
 const app = express();
@@ -38,7 +40,7 @@ const activeGames = {};
  */
 const runDaemon = async () => {
     const daily = new CronJob(
-        "30 0 0 * * *",
+        config.DAILY_MESSAGE_CRON,
         postDailyMessages,
         null, // onComplete
         true, // autostart
@@ -47,10 +49,10 @@ const runDaemon = async () => {
         null, // runOnInit
         0, // utcOffset
     );
-    console.log("daily cron has started and will next run at: ", daily.nextDates(1)[0].toUTC(0).toISO());
+    logger.info(`daily cron has started and will next run at: ${daily.nextDate().toUTC(0).toISO()}`);
 
     const weekly = new CronJob(
-        "0 0 20 * * 0",
+        config.WEEKLY_MESSAGE_CRON,
         postWeeklyMessages,
         null, // onComplete
         true, // autostart
@@ -59,7 +61,9 @@ const runDaemon = async () => {
         null, // runOnInit
         0, // utcOffset
     );
-    console.log("weekly has started and will next run at: ", weekly.nextDates(1)[0].toUTC(0).toISO());
+    logger.info(`weekly has started and will next run at: ${weekly.nextDate().toUTC(0).toISO()}`);
+
+    app.use(morganMiddleware);
 
     /**
      * Interactions endpoint URL where Discord will send HTTP requests
@@ -141,7 +145,7 @@ const runDaemon = async () => {
                 // get the associated game ID
                 const gameId = componentId.replace("accept_button_", "");
                 // Delete message with token in request body
-                const endpoint = `webhooks/${process.env.APP_ID}/${req.body.token}/messages/${req.body.message.id}`;
+                const endpoint = `webhooks/${config.APP_ID}/${req.body.token}/messages/${req.body.message.id}`;
                 try {
                     await res.send({
                         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
@@ -168,7 +172,7 @@ const runDaemon = async () => {
                     // Delete previous message
                     await DiscordRequest(endpoint, { method: "DELETE" });
                 } catch (err) {
-                    console.error("Error sending message:", err);
+                    logger.error("Error sending message:", err);
                 }
             } else if (componentId.startsWith("select_choice_")) {
                 // get the associated game ID
@@ -187,7 +191,7 @@ const runDaemon = async () => {
                     // Remove game from storage
                     delete activeGames[gameId];
                     // Update message with token in request body
-                    const endpoint = `webhooks/${process.env.APP_ID}/${req.body.token}/messages/${req.body.message.id}`;
+                    const endpoint = `webhooks/${config.APP_ID}/${req.body.token}/messages/${req.body.message.id}`;
 
                     try {
                         // Send results
@@ -204,16 +208,15 @@ const runDaemon = async () => {
                             },
                         });
                     } catch (err) {
-                        console.error("Error sending message:", err);
+                        logger.error("Error sending message:", err);
                     }
                 }
             }
         }
-        return res.status(404).send({ message: "Unknown action" });
     });
 
     app.listen(PORT, () => {
-        console.log("Listening on port", PORT);
+        logger.info(`Listening on port: ${PORT}`);
 
         // Check if guild commands from commands.js are installed (if not, install them)
         HasGuildCommands(config.APP_ID, config.GUILD_ID, [
@@ -238,7 +241,7 @@ y.command({
         const client = await getDiscordClient();
         const leetcode = new Leetcode(client);
         await leetcode.postDailyChallenge();
-        client.destroy();
+        await client.destroy();
     },
 });
 y.command({
@@ -248,7 +251,8 @@ y.command({
         const client = await getDiscordClient();
         const stats = new Stats(client);
         await stats.postDailyStats();
-        client.destroy();
+        logger.info("destroying client");
+        await client.destroy();
     },
 });
 y.command({
@@ -258,7 +262,8 @@ y.command({
         const client = await getDiscordClient();
         const stats = new Stats(client);
         await stats.postWeeklyStats();
-        client.destroy();
+        logger.info("destroying client");
+        await client.destroy();
     },
 });
 y.command({

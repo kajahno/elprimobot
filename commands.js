@@ -1,5 +1,6 @@
 import { getRPSChoices } from "./game.js";
 import { capitalize, DiscordRequest } from "./utils.js";
+import logger from "./logging.js";
 
 // Installs a command
 export async function InstallGuildCommand(appId, guildId, command) {
@@ -9,7 +10,7 @@ export async function InstallGuildCommand(appId, guildId, command) {
     try {
         await DiscordRequest(endpoint, { method: "POST", body: command });
     } catch (err) {
-        console.error(err);
+        logger.error(err);
     }
 }
 
@@ -26,14 +27,14 @@ async function HasGuildCommand(appId, guildId, command) {
             const installedNames = data.map((c) => c.name);
             // This is just matching on the name, so it's not good for updates
             if (!installedNames.includes(command.name)) {
-                console.log(`Installing "${command.name}"`);
+                logger.info(`Installing "${command.name}"`);
                 InstallGuildCommand(appId, guildId, command);
             } else {
-                console.log(`"${command.name}" command already installed`);
+                logger.info(`"${command.name}" command already installed`);
             }
         }
     } catch (err) {
-        console.error(err);
+        logger.error(err);
     }
 }
 

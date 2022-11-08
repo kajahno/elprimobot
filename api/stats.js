@@ -1,5 +1,6 @@
 import { SnowflakeUtil, MessageEmbed } from "discord.js";
 import { config } from "../config.js";
+import logger from "../logging.js";
 
 /*
     Returns a snowflake which represents the time x days in the past
@@ -18,20 +19,18 @@ export class Stats {
         this.stats = {};
     }
 
-    _defaultStats = () => {
-        return { posts: 0, words: 0, letters: 0 };
-    }
+    static _defaultStats = () => ({ posts: 0, words: 0, letters: 0 });
 
-    _initStats = async (guild) => {
+    static _initStats = async (guild) => {
         const members = await guild.members.fetch({ cache: false });
-        let stats = {};
+        const stats = {};
 
-        for (let m of members.values()) {
-            stats[m.user.username] = this._defaultStats();
+        for (const m of members.values()) {
+            stats[m.user.username] = Stats._defaultStats();
         }
 
         return stats;
-    }
+    };
 
     _getStatsChannel = async () => {
         const dominationGuild = this.client.guilds.resolve(config.GUILD_ID);
@@ -43,10 +42,12 @@ export class Stats {
     _computeWeeklyStats = async () => {
         const sevenDaysAgo = getSnowflakeFromDay(-7);
         const statsChannel = await this._getStatsChannel();
-        const stats = await this._initStats(statsChannel.guild);
+        const stats = await Stats._initStats(statsChannel.guild);
 
         const messages = await statsChannel.messages.fetch({ limit: 100, after: sevenDaysAgo });
         const collectedDays = new Set();
+
+        logger.debug("getting weekly stats from channels");
 
         for (const message of messages.values()) {
             const isBot = message.author.username === "elprimobot";
@@ -62,7 +63,7 @@ export class Stats {
             const { fields } = message.embeds[0];
             const rows = fields[0].value.split("\n");
             for (let row of rows) {
-                // "Winner Crespo (5 | 50 | 2500)"
+                // "[firstName] [lastName] (5 | 50 | 2500)"
                 // remove any bold
                 row = row.replaceAll("*", "");
                 let [username, values] = row.split("(");
@@ -81,28 +82,35 @@ export class Stats {
                     // we couldn't parse
                     break;
                 }
-                stats[username] = stats[username] || this._defaultStats();
+                stats[username] = stats[username] || Stats._defaultStats();
                 stats[username].posts += Number(posts);
                 stats[username].words += Number(words);
                 stats[username].letters += Number(letters);
             }
         }
-
+        logger.debug("done getting weekly stats from channels");
         return stats;
     };
 
     _computeDailyStats = async () => {
         const dominationGuild = this.client.guilds.resolve(config.GUILD_ID);
         const channels = await dominationGuild.channels.fetch();
-        const stats = await this._initStats(dominationGuild);
+        const stats = await Stats._initStats(dominationGuild);
 
         const oneDayAgo = getSnowflakeFromDay(-1);
 
         for (const channel of channels.values()) {
             if (channel.type !== "GUILD_TEXT") {
+                logger.debug(`skipping channel ${channel.name}, type: ${channel.type}`);
                 continue;
             }
-            const messages = await channel.messages.fetch({ limit: 100, after: oneDayAgo });
+            const numMessages = 100;
+            const messages = await channel.messages.fetch({
+                limit: numMessages,
+                after: oneDayAgo,
+            });
+
+            logger.silly(`reading the most recent ${numMessages} from channel ${channel.name}`);
             for (const message of messages.values()) {
                 const { username } = message.author;
                 const userStats = stats[username] = stats[username] || {
@@ -115,19 +123,21 @@ export class Stats {
                 userStats.letters += message.content.length;
             }
         }
-
         return stats;
     };
 
     _sendStatsChannel = async (serverStats, title) => {
+        logger.debug(`sending '${title}' stats to channel ${config.STATS_CHANNEL}`);
         if (!serverStats || !Object.keys(serverStats).length) {
             // nothing to update
             return;
         }
-        let inactive = [];
-        let active = [];
-        for (let user in serverStats) {
+        const inactive = [];
+        const active = [];
+
+        for (const user in serverStats) {
             if (config.BOTS.has(user)) {
+                logger.debug(`ignoring bot user ${user}`);
                 continue;
             }
 
@@ -148,11 +158,12 @@ export class Stats {
             );
 
         if (inactive.length) {
-            message.addField("zero activity: ", inactive.join(', '));
+            message.addField("zero activity: ", inactive.join(", "));
         }
 
         const statsChannel = await this._getStatsChannel();
         await statsChannel.send({ content: title, embeds: [message] });
+        logger.debug(`sent stats to channel ${config.STATS_CHANNEL}`);
     };
 
     /*
@@ -171,5 +182,4 @@ export class Stats {
         const stats = await this._computeWeeklyStats();
         await this._sendStatsChannel(stats, "**Weekly Stats**");
     };
-
 }
