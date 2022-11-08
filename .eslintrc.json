@@ -21,6 +21,7 @@
         "no-multi-assign": "off",
         "prefer-template": "off",
         "import/extensions": [ "error", "always", { "ignorePackages": true} ],
+        "guard-for-in": "off",
         "no-underscore-dangle": 0,
         "indent": ["error", 4],
         "quotes": [

@@ -97,8 +97,6 @@ export class Stats {
         const channels = await dominationGuild.channels.fetch();
         const stats = await Stats._initStats(dominationGuild);
 
-        logger.debug("getting daily stats from channels");
-
         const oneDayAgo = getSnowflakeFromDay(-1);
 
         for (const channel of channels.values()) {
@@ -125,8 +123,6 @@ export class Stats {
                 userStats.letters += message.content.length;
             }
         }
-
-        logger.debug("done getting daily stats from channels");
         return stats;
     };
 
@@ -138,7 +134,7 @@ export class Stats {
         }
         const inactive = [];
         const active = [];
-        // eslint-disable-next-line guard-for-in
+
         for (const user in serverStats) {
             if (config.BOTS.has(user)) {
                 logger.debug(`ignoring bot user ${user}`);
