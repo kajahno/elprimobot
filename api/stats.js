@@ -19,8 +19,17 @@ export class Stats {
         this.stats = {};
     }
 
+    /**
+     * @returns Default stats for a single user
+     */
+
     static _defaultStats = () => ({ posts: 0, words: 0, letters: 0 });
 
+    /**
+     * Initializes stats with the name of all the members
+     * @param {GUILD} guild
+     * @returns stats object with each username set with default stats
+     */
     static _initStats = async (guild) => {
         const members = await guild.members.fetch({ cache: false });
         const stats = {};
@@ -32,6 +41,9 @@ export class Stats {
         return stats;
     };
 
+    /**
+     * @returns Default channel for stats update
+     */
     _getStatsChannel = async () => {
         const dominationGuild = this.client.guilds.resolve(config.GUILD_ID);
         return dominationGuild.channels.cache.find(
@@ -39,6 +51,105 @@ export class Stats {
         );
     };
 
+    /**
+     * Separates active from inactive users
+     * @returns [active, inactive]
+     * active contains the set of users with some stats
+     * inactive is a list of names without stats
+     */
+    static _getActivityFromStats = (stats) => {
+        const active = [];
+        const inactive = [];
+
+        for (const user in stats) {
+            if (config.BOTS.has(user)) {
+                continue;
+            }
+
+            if (stats[user].posts) {
+                active.push([user, stats[user]]);
+            } else {
+                inactive.push(user);
+            }
+        }
+
+        active.sort((a, b) => b[1].posts - a[1].posts);
+        inactive.sort((a, b) => a - b);
+
+        return [active, inactive];
+    };
+
+    /**
+     * Evaluates user activity over the weeks
+     * we rely on the latest weekly update from the bot
+     * @param {*} stats this weeks stats
+     * @returns users inactity over the past few weeks
+     */
+    _processInactivityWeeks = async (stats) => {
+        const twoWeeksAgo = getSnowflakeFromDay(-14);
+        const statsChannel = await this._getStatsChannel();
+        const messages = await statsChannel.messages.fetch({ limit: 100, after: twoWeeksAgo });
+
+        const lastWeeklyMessage = [...messages.values()].reverse().find((m) => m.author.username === "elprimobot"
+            && m.content.indexOf("Weekly") > -1);
+
+        if (!lastWeeklyMessage) {
+            return [stats, null];
+        }
+
+        const [active, oneWeekInactive] = Stats._getActivityFromStats(stats);
+        const activeSeen = new Set(active);
+        const getInactive = (message) => {
+            const result = new Set();
+            if (!message) {
+                return result;
+            }
+
+            const inactive = message.fields[0].value.split(",");
+            for (const u of inactive) {
+                if (!activeSeen.has(u)) {
+                    inactive.add(u);
+                }
+            }
+
+            return result;
+        };
+        const inactiveMsg = [];
+        if (oneWeekInactive.length) {
+            inactiveMsg.push({
+                name: "1 week inactivity: ", value: oneWeekInactive.join(", "),
+            });
+        }
+        const prevOneWeekInactive = lastWeeklyMessage.embeds[1];
+        const twoWeeksInactive = getInactive(prevOneWeekInactive);
+        if (twoWeeksInactive.length) {
+            inactiveMsg.push({
+                name: "2 weeks inactivity: ", value: twoWeeksInactive.join(", "),
+            });
+        }
+        const prevTwoWeeks = lastWeeklyMessage.embeds[2];
+        const threeWeeksInactive = getInactive(prevTwoWeeks);
+        const prevThreeWeeks = lastWeeklyMessage.embeds[3];
+        const manyWeeksInactive = getInactive(prevThreeWeeks);
+        const threeWeeksOrMoreInactive = new Set([...threeWeeksInactive, ...manyWeeksInactive]);
+
+        if (threeWeeksOrMoreInactive.length) {
+            inactiveMsg.push({
+                name: ">3 weeks inactivity: ", value: threeWeeksOrMoreInactive.join(", "),
+            });
+        }
+
+        return [
+            active,
+            inactiveMsg,
+        ];
+    };
+
+    /**
+     * Weekly stats are calculated based on previous daily stats
+     * this only considers the bot update for each day
+     * @returns stats for all the users
+     */
     _computeWeeklyStats = async () => {
         const sevenDaysAgo = getSnowflakeFromDay(-7);
         const statsChannel = await this._getStatsChannel();
@@ -61,8 +172,8 @@ export class Stats {
             collectedDays.add(key);
 
             const { fields } = message.embeds[0];
-            const rows = fields[0].value.split("\n");
-            for (let row of rows) {
+            const statRows = fields[0].value.split("\n");
+            for (let row of statRows) {
                 // "[firstName] [lastName] (5 | 50 | 2500)"
                 // remove any bold
                 row = row.replaceAll("*", "");
@@ -92,6 +203,10 @@ export class Stats {
         return stats;
     };
 
+    /**
+    * Daily stats are calculated based on the activity of each user for last 24hours
+    * @returns stats for all the users
+    */
     _computeDailyStats = async () => {
         const dominationGuild = this.client.guilds.resolve(config.GUILD_ID);
         const channels = await dominationGuild.channels.fetch();
@@ -113,11 +228,7 @@ export class Stats {
             logger.silly(`reading the most recent ${numMessages} from channel ${channel.name}`);
             for (const message of messages.values()) {
                 const { username } = message.author;
-                const userStats = stats[username] = stats[username] || {
-                    posts: 0,
-                    words: 0,
-                    letters: 0,
-                };
+                const userStats = stats[username] = stats[username] || Stats._defaultStats();
                 userStats.posts++;
                 userStats.words += message.content.split(" ").length;
                 userStats.letters += message.content.length;
@@ -126,39 +237,28 @@ export class Stats {
         return stats;
     };
 
-    _sendStatsChannel = async (serverStats, title) => {
+    /**
+     * Posts a stats update to the default stats channel
+     * @param {*} activeStats Stats for active users
+     * @param {*} inactiveMsg Inactivity message
+     * @param {*} title title for the update
+     */
+    _sendStatsChannel = async (activeStats, inactiveMsg, title) => {
         logger.debug(`sending '${title}' stats to channel ${config.STATS_CHANNEL}`);
-        if (!serverStats || !Object.keys(serverStats).length) {
+        if (!activeStats.length && !inactiveMsg) {
             // nothing to update
             return;
         }
-        const inactive = [];
-        const active = [];
 
-        for (const user in serverStats) {
-            if (config.BOTS.has(user)) {
-                logger.debug(`ignoring bot user ${user}`);
-                continue;
-            }
-
-            if (serverStats[user].posts) {
-                active.push([user, serverStats[user]]);
-            } else {
-                inactive.push(user);
-            }
-        }
-        active.sort((a, b) => b[1].posts - a[1].posts);
-        inactive.sort((a, b) => a - b);
-
-        const postsValue = active.map(([username, stats]) => `**${username}** **(** ${stats.posts} **|** ${stats.words} **|** ${stats.letters}** )**`)
+        const postsValue = activeStats.map(([username, stats]) => `**${username}** **(** ${stats.posts} **|** ${stats.words} **|** ${stats.letters}** )**`)
             .join("\n");
         const message = new MessageEmbed()
             .setColor(0x0099FF).addFields(
                 { name: "user (posts | words | letters)", value: postsValue, inline: true },
             );
 
-        if (inactive.length) {
-            message.addField("zero activity: ", inactive.join(", "));
+        if (inactiveMsg && inactiveMsg.length) {
+            message.addFields(...inactiveMsg);
         }
 
         const statsChannel = await this._getStatsChannel();
@@ -171,7 +271,11 @@ export class Stats {
     */
     postDailyStats = async () => {
         const stats = await this._computeDailyStats();
-        await this._sendStatsChannel(stats, "**Daily Stats**");
+        const [active, inactive] = Stats._getActivityFromStats(stats);
+        const inactiveMsg = inactive.length ? [{
+            name: "Inactive last 24: ", value: inactive.join(", "),
+        }] : null;
+        await this._sendStatsChannel(active, inactiveMsg, "**Daily Stats**");
     };
 
     /*
@@ -180,6 +284,7 @@ export class Stats {
     */
     postWeeklyStats = async () => {
         const stats = await this._computeWeeklyStats();
-        await this._sendStatsChannel(stats, "**Weekly Stats**");
+        const [onlyActive, inactiveMsg] = await this._processInactivityWeeks(stats);
+        await this._sendStatsChannel(onlyActive, inactiveMsg, "**Weekly Stats**");
     };
 }
