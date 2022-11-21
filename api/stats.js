@@ -144,14 +144,25 @@ export class Stats {
 
         if (threeWeeksOrMoreInactive.size) {
             inactiveMsg.push({
-                name: ">3 weeks inactivity: ", value: [...threeWeeksOrMoreInactive].join(", "),
+                name: "removing due to 3+ weeks of inactivity: ", value: [...threeWeeksOrMoreInactive].join(", "),
             });
+
+            await Stats._kickInactiveMembers(statsChannel.guild, threeWeeksOrMoreInactive);
         }
 
         return [
             active,
             inactiveMsg,
         ];
+    };
+
+    static _kickInactiveMembers = async (guild, usernames) => {
+        const members = await guild.members.fetch({ cache: false });
+        for (const guildMember of members.values()) {
+            if (usernames.has(guildMember.user.username)) {
+                await guildMember.kick();
+            }
+        }
     };
 
     /**
