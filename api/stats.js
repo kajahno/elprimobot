@@ -90,25 +90,25 @@ export class Stats {
         const statsChannel = await this._getStatsChannel();
         const messages = await statsChannel.messages.fetch({ limit: 100, after: twoWeeksAgo });
 
-        const lastWeeklyMessage = [...messages.values()].reverse().find((m) => m.author.username === "elprimobot"
+        const mostRecentWeeklyMessage = [...messages.values()].reverse().find((m) => m.author.username === "elprimobot"
             && m.content.indexOf("Weekly") > -1);
 
-        if (!lastWeeklyMessage) {
+        if (!mostRecentWeeklyMessage) {
             return [stats, null];
         }
 
         const [active, oneWeekInactive] = Stats._getActivityFromStats(stats);
         const activeSeen = new Set(active);
-        const getInactive = (message) => {
+        const getInactive = (field) => {
             const result = new Set();
-            if (!message) {
+            if (!field?.value) {
                 return result;
             }
 
-            const inactive = message.fields[0].value.split(",");
+            const inactive = field.value.split(",");
             for (const u of inactive) {
                 if (!activeSeen.has(u)) {
-                    inactive.add(u);
+                    result.add(u);
                 }
             }
 
@@ -120,22 +120,31 @@ export class Stats {
                 name: "1 week inactivity: ", value: oneWeekInactive.join(", "),
             });
         }
-        const prevOneWeekInactive = lastWeeklyMessage.embeds[1];
+
+        const prevEmbedUpdate = mostRecentWeeklyMessage.embeds[0];
+        if (!prevEmbedUpdate) {
+            // no weekly updates
+            return [
+                active,
+                inactiveMsg,
+            ];
+        }
+        const prevOneWeekInactive = prevEmbedUpdate.fields[1];
         const twoWeeksInactive = getInactive(prevOneWeekInactive);
-        if (twoWeeksInactive.length) {
+        if (twoWeeksInactive.size) {
             inactiveMsg.push({
-                name: "2 weeks inactivity: ", value: twoWeeksInactive.join(", "),
+                name: "2 weeks inactivity: ", value: [...twoWeeksInactive].join(", "),
             });
         }
-        const prevTwoWeeks = lastWeeklyMessage.embeds[2];
+        const prevTwoWeeks = prevEmbedUpdate.fields[2];
         const threeWeeksInactive = getInactive(prevTwoWeeks);
-        const prevThreeWeeks = lastWeeklyMessage.embeds[3];
+        const prevThreeWeeks = prevEmbedUpdate.fields[3];
         const manyWeeksInactive = getInactive(prevThreeWeeks);
         const threeWeeksOrMoreInactive = new Set([...threeWeeksInactive, ...manyWeeksInactive]);
 
-        if (threeWeeksOrMoreInactive.length) {
+        if (threeWeeksOrMoreInactive.size) {
             inactiveMsg.push({
-                name: ">3 weeks inactivity: ", value: threeWeeksOrMoreInactive.join(", "),
+                name: ">3 weeks inactivity: ", value: [...threeWeeksOrMoreInactive].join(", "),
             });
         }
 
