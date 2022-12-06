@@ -1,6 +1,6 @@
 import fetch from "node-fetch";
 import { verifyKey } from "discord-interactions";
-import { Leetcode, Stats, getDiscordClient } from "./api/index.js";
+import { Leetcode, getDiscordClient } from "./api/index.js";
 import { config } from "./config.js";
 import logger from "./logging.js";
 
@@ -60,16 +60,16 @@ export async function postDailyMessages() {
     await leetcode.postDailyChallenge();
     await leetcode.postWeeklyChallenge();
 
-    const stats = new Stats(client);
-    await stats.postDailyStats();
+    // const stats = new Stats(client);
+    // await stats.postDailyStats();
     logger.info("destroying discord client");
 }
 
 export async function postWeeklyMessages() {
-    const client = await getDiscordClient();
+    // const client = await getDiscordClient();
 
     logger.info("postWeeklyMessages triggered at:", new Date(Date.now()).toUTCString(0));
-    const stats = new Stats(client);
-    await stats.postWeeklyStats();
+    // const stats = new Stats(client);
+    // await stats.postWeeklyStats();
     logger.info("destroying discord client");
 }
