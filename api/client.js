@@ -4,7 +4,10 @@ import logger from "../logging.js";
 
 const childLogger = logger.child({ component: "discord client" });
 
-const instance = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MEMBERS] });
+const instance = new Client({
+    intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MEMBERS,
+        Intents.FLAGS.GUILD_MESSAGES],
+});
 
 // Indicates that discord is in the process of creating a new connection
 let initializing = false;
