@@ -93,10 +93,6 @@ export class Stats {
         const mostRecentWeeklyMessage = [...messages.values()].reverse().find((m) => m.author.username === "elprimobot"
             && m.content.indexOf("Weekly") > -1);
 
-        if (!mostRecentWeeklyMessage) {
-            return [stats, null];
-        }
-
         const [active, oneWeekInactive] = Stats._getActivityFromStats(stats);
         const activeSeen = new Set(active);
         const getInactive = (field) => {
@@ -121,9 +117,9 @@ export class Stats {
             });
         }
 
-        const prevEmbedUpdate = mostRecentWeeklyMessage.embeds[0];
+        const prevEmbedUpdate = mostRecentWeeklyMessage?.embeds[0];
         if (!prevEmbedUpdate) {
-            // no weekly updates
+            // when there is no previous weekly update, default to this week's inactivity
             return [
                 active,
                 inactiveMsg,
