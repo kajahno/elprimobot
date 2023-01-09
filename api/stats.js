@@ -94,16 +94,18 @@ export class Stats {
             && m.content.indexOf("Weekly") > -1);
 
         const [active, oneWeekInactive] = Stats._getActivityFromStats(stats);
-        const activeSeen = new Set(active);
+        const activeThisWeek = new Set(active.map(([u]) => u));
         const getInactive = (field) => {
             const result = new Set();
             if (!field?.value) {
                 return result;
             }
 
-            const inactive = field.value.split(",");
+            const inactive = field.value.split(",").map(v => v.trim());
             for (const u of inactive) {
-                if (!activeSeen.has(u)) {
+                const isNotABot = !config.BOTS.has(u);
+                const inactiveThisWeek = !activeThisWeek.has(u);
+                if (isNotABot && inactiveThisWeek) {
                     result.add(u);
                 }
             }
