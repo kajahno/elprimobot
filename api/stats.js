@@ -1,16 +1,12 @@
-import { SnowflakeUtil, MessageEmbed } from "discord.js";
+import { MessageEmbed } from "discord.js";
 import { config } from "../config.js";
 import logger from "../logging.js";
 
-/*
-    Returns a snowflake which represents the time x days in the past
-    https://discord.com/developers/docs/reference#snowflakes
-*/
-const getSnowflakeFromDay = (days) => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    d.setDate(d.getDate() + days);
-    return SnowflakeUtil.generate(d);
+// helper to get days ago
+const daysAgo = (days) => {
+    const date = new Date();
+    date.setDate(date.getDate() - days);
+    return date;
 };
 
 export class Stats {
@@ -88,9 +84,9 @@ export class Stats {
      */
     _processInactivityWeeks = async (stats) => {
         // weekly update will be within the last 8 days
-        const lastWeekAgo = getSnowflakeFromDay(-8);
+        const fromDate = daysAgo(8);
         const statsChannel = await this._getStatsChannel();
-        const messages = await statsChannel.messages.fetch({ limit: 1000, after: lastWeekAgo });
+        const messages = await Stats._getChannelMessages(statsChannel, fromDate);
 
         // We want to avoid counting multiple weeks (e.g. if we sent the weekly update twice)
         // only consider the oldest weekly update within 8 days
@@ -105,7 +101,7 @@ export class Stats {
                 return result;
             }
 
-            const inactive = field.value.split(",").map(v => v.trim());
+            const inactive = field.value.split(",").map((v) => v.trim());
             for (const u of inactive) {
                 const isNotABot = !config.BOTS.has(u);
                 const inactiveThisWeek = !activeThisWeek.has(u);
@@ -167,12 +163,48 @@ export class Stats {
         }
     };
 
+    /*
+    * Discord limits the number of messages we can fetch at once
+    * This function fetches messages in chunks of 100
+    * until we reach the fromDate
+    *
+    * @param {Discord.Channel} channel
+    * @param {Date} fromDate
+    * @returns {Array<Discord.Message>}
+    */
+    static _getChannelMessages = async (channel, fromDate) => {
+        const messages = [];
+        let lastMessageId = null;
+        let done = false;
+        while (!done) {
+            const options = { limit: 100 };
+            if (lastMessageId) {
+                options.before = lastMessageId;
+            }
+            const fetchedMessages = await channel.messages.fetch(options);
+
+            if (fetchedMessages.size === 0) {
+                done = true;
+            } else {
+                lastMessageId = fetchedMessages.last().id;
+                for (const message of fetchedMessages.values()) {
+                    if (message.createdTimestamp < fromDate.getTime()) {
+                        done = true;
+                        break;
+                    }
+                    messages.push(message);
+                }
+            }
+        }
+        return messages;
+    };
+
     /**
     * Compute all the message from a given date
     * this has to be a snowflake date
     * @returns stats for all the users
     */
-    _computeStatsFromDate = async (snowflakeFromDate) => {
+    _computeStatsFromDate = async (fromDate) => {
         const dominationGuild = this.client.guilds.resolve(config.GUILD_ID);
         const channels = await dominationGuild.channels.fetch();
         const stats = await Stats._initStats(dominationGuild);
@@ -182,18 +214,12 @@ export class Stats {
                 logger.debug(`skipping channel ${channel.name}, type: ${channel.type}`);
                 continue;
             }
-            // Discord limits the number of messages we can fetch at once
-            // We will have to fetch all the messages until we reach the last 7 days
-            // TODO: get back here
-            // limit: int value should be less than or equal to 100.
-            const numMessages = 100;
-            const messages = await channel.messages.fetch({
-                limit: numMessages,
-                after: snowflakeFromDate,
-            });
 
-            logger.silly(`reading the most recent ${numMessages} from channel ${channel.name}`);
-            for (const message of messages.values()) {
+            const messages = await Stats._getChannelMessages(channel, fromDate);
+
+            logger.debug(`processing ${messages.length} messages from channel ${channel.name}`);
+
+            for (const message of messages) {
                 const { username } = message.author;
                 const userStats = stats[username] = stats[username] || Stats._defaultStats();
                 userStats.posts++;
@@ -239,7 +265,7 @@ export class Stats {
         and post the weekly stats
     */
     postWeeklyStats = async () => {
-        const fromDate = getSnowflakeFromDay(-7);
+        const fromDate = daysAgo(7);
         const stats = await this._computeStatsFromDate(fromDate);
         const [onlyActive, inactiveMsg] = await this._processInactivityWeeks(stats);
         await this._sendStatsChannel(onlyActive, inactiveMsg, "**Weekly Stats**");
