@@ -245,17 +245,6 @@ y.command({
     },
 });
 y.command({
-    command: "stats-daily",
-    description: "Sends Discord users daily chat activity stats",
-    handler: async () => {
-        const client = await getDiscordClient();
-        const stats = new Stats(client);
-        await stats.postDailyStats();
-        logger.info("destroying client");
-        await client.destroy();
-    },
-});
-y.command({
     command: "stats-weekly",
     description: "Sends Discord users weekly chat activity stats",
     handler: async () => {

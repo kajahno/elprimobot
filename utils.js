@@ -59,9 +59,6 @@ export async function postDailyMessages() {
     const leetcode = new Leetcode(client);
     await leetcode.postDailyChallenge();
     await leetcode.postWeeklyChallenge();
-
-    const stats = new Stats(client);
-    await stats.postDailyStats();
     logger.info("destroying discord client");
 }
 
