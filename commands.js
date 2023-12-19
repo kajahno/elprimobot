@@ -66,6 +66,13 @@ export const TEST_COMMAND = {
     type: 1,
 };
 
+// Simple test command
+export const RANDOM_PROBLEM_COMMAND = {
+    name: "randomproblem",
+    description: "Get a random leetcode problem",
+    type: 1,
+};
+
 // Command containing options
 export const CHALLENGE_COMMAND = {
     name: "challenge",

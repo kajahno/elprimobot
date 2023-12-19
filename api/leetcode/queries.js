@@ -99,3 +99,52 @@ export async function weeklyGetLeetcodeData() {
 
     return response.json();
 }
+
+export async function getProblemSet() {
+    const data = {
+        query: `    
+            query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) {
+                problemsetQuestionList: questionList(
+                categorySlug: $categorySlug
+                limit: $limit
+                skip: $skip
+                filters: $filters
+                ) {
+                total: totalNum
+                questions: data {
+                    acRate
+                    difficulty
+                    freqBar
+                    frontendQuestionId: questionFrontendId
+                    isFavor
+                    paidOnly: isPaidOnly
+                    status
+                    title
+                    titleSlug
+                    topicTags {
+                    name
+                    id
+                    slug
+                    }
+                    hasSolution
+                    hasVideoSolution
+                }
+                }
+            }`,
+        variables: { categorySlug: "all-code-essentials", limit: 10, skip: 0, filters: {} },
+    };
+
+    const response = await fetch(`${URL}/graphql/`, {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers,
+        compress: true,
+    });
+
+    if (response.status !== 200) {
+        logger.error("could not fetch: ", response.status);
+        return;
+    }
+
+    return response.json();
+}

@@ -16,13 +16,15 @@ import {
     VerifyDiscordRequest, getRandomEmoji, DiscordRequest, postDailyMessages, postWeeklyMessages,
 } from "./utils.js";
 import { getShuffledOptions, getResult } from "./game.js";
-import { Stats, getDiscordClient, Leetcode } from "./api/index.js";
+import { Stats, getDiscordClient, Leetcode, LeetcodeData } from "./api/index.js";
 import {
     CHALLENGE_COMMAND,
     TEST_COMMAND,
+    RANDOM_PROBLEM_COMMAND,
     HasGuildCommands,
 } from "./commands.js";
 import morganMiddleware from "./middleware/morgan.js";
+import { MessageEmbed } from "discord.js";
 import logger from "./logging.js";
 
 // Create an express app
@@ -65,6 +67,8 @@ const runDaemon = async () => {
 
     app.use(morganMiddleware);
 
+    const leetcode = new Leetcode(await getDiscordClient());
+
     /**
      * Interactions endpoint URL where Discord will send HTTP requests
      */
@@ -97,6 +101,18 @@ const runDaemon = async () => {
                     },
                 });
             }
+
+            // "random problem" guild command
+            if (name === "randomproblem") {
+                const message = await leetcode.getRandomProblemMessage();
+                return res.send({
+                    type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+                    data: message,
+                });
+            }
+
+            // TODO: "problem from set" guild command
+
             // "challenge" guild command
             if (name === "challenge" && id) {
                 const userId = req.body.member.user.id;
@@ -222,6 +238,7 @@ const runDaemon = async () => {
         HasGuildCommands(config.APP_ID, config.GUILD_ID, [
             TEST_COMMAND,
             CHALLENGE_COMMAND,
+            RANDOM_PROBLEM_COMMAND,
         ]);
     });
 };
@@ -241,6 +258,26 @@ y.command({
         const client = await getDiscordClient();
         const leetcode = new Leetcode(client);
         await leetcode.postDailyChallenge();
+        await client.destroy();
+    },
+});
+y.command({
+    command: "leetcode-weekly",
+    description: "Sends leetcode weekly problem to a Discord channel",
+    handler: async () => {
+        const client = await getDiscordClient();
+        const leetcode = new Leetcode(client);
+        await leetcode.postWeeklyChallenge();
+        await client.destroy();
+    },
+});
+y.command({
+    command: "leetcode-random",
+    description: "Sends a random leetcode problem to a Discord channel",
+    handler: async () => {
+        const client = await getDiscordClient();
+        const leetcode = new Leetcode(client);
+        await leetcode.postRandomChallenge();
         await client.destroy();
     },
 });
