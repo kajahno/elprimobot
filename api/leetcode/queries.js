@@ -102,7 +102,7 @@ export async function weeklyGetLeetcodeData() {
 
 export async function getProblemSet() {
     const data = {
-        query: `    
+        query: `
             query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) {
                 problemsetQuestionList: questionList(
                 categorySlug: $categorySlug

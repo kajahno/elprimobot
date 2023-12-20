@@ -1,8 +1,8 @@
 import { MessageEmbed } from "discord.js";
-import { dailyGetLeetcodeData, weeklyGetLeetcodeData, getProblemSet, URL } from "./leetcode/index.js";
+import { URL } from "./leetcode/index.js";
+import { LeetcodeData } from "./index.js";
 import { config } from "../config.js";
 import logger from "../logging.js";
-import staticProblemSets from './leetcode/static/problemSets.json' assert { type: "json" };
 
 // const childLogger = logger.child({ component: "discord client" });
 
@@ -29,83 +29,61 @@ export class Leetcode {
     };
 
     /*
-        Fetch the leetcode weekly challenge and send a message to the channel
+        Post a MessageEmbed into the leetcode channel
     */
-    _postWeeklyIntoChannel = async () => {
-        const obj = await this.getWeeklyProblemMessage();
-        if (!obj) {
-            logger.error("Unable to fetch problem message");
-            return;
-        }
-
+    _postMessageIntoChannel = async (message) => {
         if (!this.channel) {
             this.channel = await this._getLeetCodeChannel();
         }
+        await this.channel.send(message);
+    }
 
-        await this.channel.send(obj);
+    /*
+        Fetch the leetcode weekly challenge and send a message to the channel
+    */
+    _postWeeklyIntoChannel = async () => {
+        const weeklyMessage = await this.getWeeklyProblemMessage();
+        if (!weeklyMessage) {
+            logger.error("Unable to fetch problem message");
+            return;
+        }
+        await this._postMessageIntoChannel(weeklyMessage);
     };
 
     /*
         Fetch the leetcode daily challenge and send a message to the channel
     */
     postDailyChallenge = async () => {
-        const obj = await this.getDailyProblemMessage();
-        if (!obj) {
-            logger.error("Unable to fetch problem message");
+        const dailyMessage = await this.getDailyProblemMessage();
+        if (!dailyMessage) {
+            logger.error("Unable to fetch daily challenge message");
             return;
         }
-
-        if (!this.channel) {
-            this.channel = await this._getLeetCodeChannel();
-        }
-        await this.channel.send(obj);
+        await this._postMessageIntoChannel(dailyMessage);
     };
 
     /*
         Fetch the leetcode weekly challenge and send a message to the channel
     */
     postWeeklyChallenge = async () => {
-        const {
-            data: {
-                dailyCodingChallengeV2:
-            { weeklyChallenges },
-            },
-        } = await weeklyGetLeetcodeData();
-        if (!weeklyChallenges) {
-            logger.error("Unable to fetch weeklyGetLeetcodeData");
+        const weeklyMessage = await this.getWeeklyProblemMessage();
+        if (!weeklyMessage) {
+            logger.error("Unable to fetch weekly challenge message");
             return;
         }
-
-        const lastWeeklyProblemData = weeklyChallenges[weeklyChallenges.length - 1];
-        const oneDay = 24 * 60 * 60 * 1000; // this is a day expressed in milliseconds
-        const now = new Date();
-        const weeklyChangeDate = Date.parse(lastWeeklyProblemData.date) + oneDay * 7;
-        const weeklyRemainingDays = Math.round(Math.abs((weeklyChangeDate - now) / oneDay));
-        const remainingTimeMessage = weeklyRemainingDays + (weeklyRemainingDays >= 2 ? " days" : " day");
-
-        const info = {
-            ...lastWeeklyProblemData.question,
-            link: lastWeeklyProblemData.link,
-            remainingTimeMessage,
-        };
-
-        await this._postWeeklyIntoChannel(info);
+        await this._postWeeklyIntoChannel(weeklyMessage);
     };
 
     /*
         Post a random problem from the problem set
     */
     postRandomChallenge = async () => {
-        const obj = await this.getRandomProblemMessage();
-        if (!obj) {
+        const randomProblemMessage = await this.getRandomProblemMessage();
+        if (!randomProblemMessage) {
             logger.error("Unable to fetch problem message");
             return;
         }
-
-        if (!this.channel) {
-            this.channel = await this._getLeetCodeChannel();
-        }
-        await this.channel.send(obj);
+        await this._postMessageIntoChannel(randomProblemMessage);
     }
 
     /*
@@ -131,9 +109,9 @@ export class Leetcode {
         Get random problem message embed
     */
     getRandomProblemMessage = async () => {
-        const obj = await this._getRandomProblem();
+        const randomProblemObj = await this._getRandomProblem();
 
-        if (!obj) {
+        if (!randomProblemObj) {
             logger.error("Unable to fetch problemSet");
             return;
         }
@@ -141,7 +119,7 @@ export class Leetcode {
         return {
             content: "**Leetcode Random Problem**", // This is the first line of the message
             embeds: [
-                await this._buildDetailedProblemMessage({...obj, color: this.MESSAGE_COLORS.RANDOM})
+                await this._buildDetailedProblemMessage({...randomProblemObj, color: this.MESSAGE_COLORS.RANDOM})
             ]
         }
     }
@@ -150,9 +128,9 @@ export class Leetcode {
         Get daily problem message embed
     */
     getDailyProblemMessage = async () => {
-        const obj = await this.leetcodeData.getDailyProblem();
+        const dailyProblemObj = await this.leetcodeData.getDailyProblem();
 
-        if (!obj) {
+        if (!dailyProblemObj) {
             logger.error("Unable to fetch the daily problem");
             return;
         }
@@ -160,7 +138,7 @@ export class Leetcode {
         return {
             content: "**Leetcode Daily**", // This is the first line of the message
             embeds: [
-                await this._buildDetailedProblemMessage({...obj, color: this.MESSAGE_COLORS.DAILY})
+                await this._buildDetailedProblemMessage({...dailyProblemObj, color: this.MESSAGE_COLORS.DAILY})
             ]
         }
     }
@@ -169,9 +147,9 @@ export class Leetcode {
         Get weekly problem message embed
     */
     getWeeklyProblemMessage = async () => {
-        const obj = await this.leetcodeData.getWeeklyProblem();
+        const weeklyProblemObj = await this.leetcodeData.getWeeklyProblem();
 
-        if (!obj) {
+        if (!weeklyProblemObj) {
             logger.error("Unable to fetch the daily problem");
             return;
         }
@@ -179,7 +157,7 @@ export class Leetcode {
         return {
             content: "**Leetcode Weekly**", // This is the first line of the message
             embeds: [
-                await this._buildSimplifiedProblemMessage({...obj, color: this.MESSAGE_COLORS.WEEKLY})
+                await this._buildSimplifiedProblemMessage({...weeklyProblemObj, color: this.MESSAGE_COLORS.WEEKLY})
             ]
         }
     }
@@ -209,97 +187,4 @@ export class Leetcode {
             .addFields({ name: "Remaining time", value: `${problem.remainingTimeMessage}`, inline: false })
             .setFooter({ text: "Time to code 🔥👨‍💻🔥" });
     }
-}
-
-
-export class LeetcodeData {
-
-    constructor() {}
-
-    getProblemSetData = async () => {
-        // TODO: find a way to memoize this. It takes too long.
-        const { data: { problemsetQuestionList: { questions } } } = await getProblemSet();
-        if (!questions) {
-            logger.error("Unable to fetch problemsetQuestionList");
-            return;
-        }
-
-        return questions
-    };
-
-    getDailyProblem = async () => {
-        const { data: { activeDailyCodingChallengeQuestion } } = await dailyGetLeetcodeData();
-        if (!activeDailyCodingChallengeQuestion) {
-            logger.error("Unable to fetch dailyGetLeetcodeData");
-            return;
-        }
-        return {
-            ...activeDailyCodingChallengeQuestion.question,
-            link: activeDailyCodingChallengeQuestion.link,
-        };
-    }
-
-    getWeeklyProblem = async () => {
-        const {
-            data: {
-                dailyCodingChallengeV2:
-            { weeklyChallenges },
-            },
-        } = await weeklyGetLeetcodeData();
-        if (!weeklyChallenges) {
-            logger.error("Unable to fetch weeklyGetLeetcodeData");
-            return;
-        }
-
-        const lastWeeklyProblemData = weeklyChallenges[weeklyChallenges.length - 1];
-        const oneDay = 24 * 60 * 60 * 1000; // this is a day expressed in milliseconds
-        const now = new Date();
-        const weeklyChangeDate = Date.parse(lastWeeklyProblemData.date) + oneDay * 7;
-        const weeklyRemainingDays = Math.round(Math.abs((weeklyChangeDate - now) / oneDay));
-        const remainingTimeMessage = weeklyRemainingDays + (weeklyRemainingDays >= 2 ? " days" : " day");
-
-        return {
-            ...lastWeeklyProblemData.question,
-            link: lastWeeklyProblemData.link,
-            remainingTimeMessage,
-        };
-    }
-
-    getStaticProblemSet = async () => {
-        const { data: { problemsetQuestionList: { questions } } } = staticProblemSets;
-        if (!questions) {
-            logger.error("Unable to fetch problemsetQuestionList");
-            return;
-        }
-
-        return questions
-    };
-
-    getProblemCategories = async () => {
-        return [
-            "Array",
-            "Backtracking",
-            "Binary Search",
-            "Bit Manipulation",
-            "Divide and Conquer",
-            "Dynamic Programming",
-            "Greedy",
-            "Hash Table",
-            "Heap (Priority Queue)",
-            "Linked List",
-            "Math",
-            "Matrix",
-            "Merge Sort",
-            "Monotonic Stack",
-            "Recursion",
-            "Simulation",
-            "Sliding Window",
-            "Sorting",
-            "Stack",
-            "String Matching",
-            "String",
-            "Trie",
-            "Two Pointers",
-        ]
-    };
 }

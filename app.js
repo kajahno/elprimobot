@@ -16,7 +16,7 @@ import {
     VerifyDiscordRequest, getRandomEmoji, DiscordRequest, postDailyMessages, postWeeklyMessages,
 } from "./utils.js";
 import { getShuffledOptions, getResult } from "./game.js";
-import { Stats, getDiscordClient, Leetcode, LeetcodeData } from "./api/index.js";
+import { Stats, getDiscordClient, Leetcode } from "./api/index.js";
 import {
     CHALLENGE_COMMAND,
     TEST_COMMAND,
@@ -24,7 +24,6 @@ import {
     HasGuildCommands,
 } from "./commands.js";
 import morganMiddleware from "./middleware/morgan.js";
-import { MessageEmbed } from "discord.js";
 import logger from "./logging.js";
 
 // Create an express app
