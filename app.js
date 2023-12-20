@@ -16,11 +16,14 @@ import {
     VerifyDiscordRequest, getRandomEmoji, DiscordRequest, postDailyMessages, postWeeklyMessages,
 } from "./utils.js";
 import { getShuffledOptions, getResult } from "./game.js";
-import { Stats, getDiscordClient, Leetcode } from "./api/index.js";
+import {
+    Stats, getDiscordClient, Leetcode,
+} from "./api/index.js";
 import {
     CHALLENGE_COMMAND,
     TEST_COMMAND,
     RANDOM_PROBLEM_COMMAND,
+    PROBLEM_FROM_SET_COMMAND,
     HasGuildCommands,
 } from "./commands.js";
 import morganMiddleware from "./middleware/morgan.js";
@@ -110,7 +113,19 @@ const runDaemon = async () => {
                 });
             }
 
-            // TODO(#80): "problem from set" guild command
+            // "problemfromset" guild command
+            if (name === "problemfromset") {
+                logger.info(req.body);
+
+                // Get the category passed
+                const categoryId = req.body.data.options[0].value;
+                const message = await leetcode.getRandomProblemFromCategoryMessage(categoryId);
+
+                return res.send({
+                    type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+                    data: message,
+                });
+            }
 
             // "challenge" guild command
             if (name === "challenge" && id) {
@@ -127,8 +142,7 @@ const runDaemon = async () => {
                 return res.send({
                     type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
                     data: {
-                        // Fetches a random emoji to send from a helper function
-                        content: `Rock papers scissors challenge from <@${userId}>`,
+                        content: `Challenge from category for <@${userId}>`,
                         components: [
                             {
                                 type: MessageComponentTypes.ACTION_ROW,
@@ -165,7 +179,6 @@ const runDaemon = async () => {
                     await res.send({
                         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
                         data: {
-                            // Fetches a random emoji to send from a helper function
                             content: "What is your object of choice?",
                             // Indicates it'll be an ephemeral message
                             flags: InteractionResponseFlags.EPHEMERAL,
@@ -238,6 +251,7 @@ const runDaemon = async () => {
             TEST_COMMAND,
             CHALLENGE_COMMAND,
             RANDOM_PROBLEM_COMMAND,
+            PROBLEM_FROM_SET_COMMAND,
         ]);
     });
 };

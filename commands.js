@@ -1,5 +1,6 @@
 import { getRPSChoices } from "./game.js";
 import { capitalize, DiscordRequest } from "./utils.js";
+import { getProblemCategories } from "./api/index.js";
 import logger from "./logging.js";
 
 // Installs a command
@@ -22,16 +23,9 @@ async function HasGuildCommand(appId, guildId, command) {
     try {
         const res = await DiscordRequest(endpoint, { method: "GET" });
         const data = await res.json();
-
         if (data) {
-            const installedNames = data.map((c) => c.name);
-            // This is just matching on the name, so it's not good for updates
-            if (!installedNames.includes(command.name)) {
-                logger.info(`Installing "${command.name}"`);
-                InstallGuildCommand(appId, guildId, command);
-            } else {
-                logger.info(`"${command.name}" command already installed`);
-            }
+            InstallGuildCommand(appId, guildId, command);
+            logger.info(`Installing "${command.name}"`);
         }
     } catch (err) {
         logger.error(err);
@@ -59,6 +53,18 @@ function createCommandChoices() {
     return commandChoices;
 }
 
+// Get the challenge categories from api/leetcode-data.js
+export async function challengeCategoriesCommandChoices() {
+    const commandChoices = [];
+    for (const [key, value] of Object.entries(await getProblemCategories())) {
+        commandChoices.push({
+            name: key,
+            value,
+        });
+    }
+    return commandChoices;
+}
+
 // Simple test command
 export const TEST_COMMAND = {
     name: "test",
@@ -66,10 +72,24 @@ export const TEST_COMMAND = {
     type: 1,
 };
 
-// Simple test command
 export const RANDOM_PROBLEM_COMMAND = {
     name: "randomproblem",
     description: "Get a random leetcode problem",
+    type: 1,
+};
+
+export const PROBLEM_FROM_SET_COMMAND = {
+    name: "problemfromset",
+    description: "Get a leetcode problem from a category",
+    options: [
+        {
+            type: 3,
+            name: "category",
+            description: "Pick your category",
+            required: true,
+            choices: (await challengeCategoriesCommandChoices()),
+        },
+    ],
     type: 1,
 };
 

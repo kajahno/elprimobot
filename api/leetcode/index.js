@@ -1,7 +1,9 @@
 import {
-    dailyGetLeetcodeData, weeklyGetLeetcodeData, getProblemSet, URL,
+    dailyGetLeetcodeData, weeklyGetLeetcodeData, getProblemSet,
+    getProblemSetFromCategory, URL,
 } from "./queries.js";
 
 export {
-    dailyGetLeetcodeData, weeklyGetLeetcodeData, getProblemSet, URL,
+    dailyGetLeetcodeData, weeklyGetLeetcodeData, getProblemSet,
+    getProblemSetFromCategory, URL,
 };
