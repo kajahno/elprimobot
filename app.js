@@ -110,7 +110,7 @@ const runDaemon = async () => {
                 });
             }
 
-            // TODO: "problem from set" guild command
+            // TODO(#80): "problem from set" guild command
 
             // "challenge" guild command
             if (name === "challenge" && id) {

@@ -1,27 +1,24 @@
 import { dailyGetLeetcodeData, weeklyGetLeetcodeData, getProblemSet } from "./leetcode/index.js";
 import logger from "../logging.js";
-import staticProblemSets from './leetcode/static/problemSets.json' assert { type: "json" };
 
 export class LeetcodeData {
 
-    constructor() {}
-
     getProblemSetData = async (limit, skip) => {
-        const { data: { problemsetQuestionList: { questions } } } = await getProblemSet(limit, skip);
-        if (!questions) {
+        const challenges = (await getProblemSet(limit, skip))?.data?.problemsetQuestionList?.questions;
+        if (!challenges) {
             logger.error("Unable to fetch problemsetQuestionList");
             return;
         }
-        return questions
+        return challenges
     };
 
     getNumProblems = async () => {
-        const { data: { problemsetQuestionList: { total } } } = await getProblemSet();
-        if (!total) {
+        const totalProblems = (await getProblemSet())?.data?.problemsetQuestionList?.total;
+        if (!totalProblems) {
             logger.error("Unable to fetch problemsetQuestionList");
             return;
         }
-        return total;
+        return totalProblems;
     }
 
     getRandomProblem = async () => {
@@ -42,7 +39,7 @@ export class LeetcodeData {
     }
 
     getDailyProblem = async () => {
-        const { data: { activeDailyCodingChallengeQuestion } } = await dailyGetLeetcodeData();
+        const activeDailyCodingChallengeQuestion = (await dailyGetLeetcodeData())?.data?.activeDailyCodingChallengeQuestion;
         if (!activeDailyCodingChallengeQuestion) {
             logger.error("Unable to fetch dailyGetLeetcodeData");
             return;
