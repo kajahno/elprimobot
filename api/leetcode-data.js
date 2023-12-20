@@ -6,16 +6,40 @@ export class LeetcodeData {
 
     constructor() {}
 
-    getProblemSetData = async () => {
-        // TODO: find a way to memoize this. It takes too long.
-        const { data: { problemsetQuestionList: { questions } } } = await getProblemSet();
+    getProblemSetData = async (limit, skip) => {
+        const { data: { problemsetQuestionList: { questions } } } = await getProblemSet(limit, skip);
         if (!questions) {
             logger.error("Unable to fetch problemsetQuestionList");
             return;
         }
-
         return questions
     };
+
+    getNumProblems = async () => {
+        const { data: { problemsetQuestionList: { total } } } = await getProblemSet();
+        if (!total) {
+            logger.error("Unable to fetch problemsetQuestionList");
+            return;
+        }
+        return total;
+    }
+
+    getRandomProblem = async () => {
+        const totalProblems = await this.getNumProblems();
+
+        const randomProblemIndex = Math.floor(Math.random() * totalProblems);
+
+        const randomProblem = await this.getProblemSetData(1, Math.min(randomProblemIndex, totalProblems - 1));
+        if (!randomProblem) {
+            logger.error("Unable to fetch problem with ID: ", randomProblemIndex);
+            return;
+        }
+
+        return {
+            ...randomProblem[0],
+            link: `/problems/${randomProblem[0].titleSlug}/`,
+        };
+    }
 
     getDailyProblem = async () => {
         const { data: { activeDailyCodingChallengeQuestion } } = await dailyGetLeetcodeData();
@@ -49,16 +73,6 @@ export class LeetcodeData {
             remainingTimeMessage,
         };
     }
-
-    getStaticProblemSet = async () => {
-        const { data: { problemsetQuestionList: { questions } } } = staticProblemSets;
-        if (!questions) {
-            logger.error("Unable to fetch problemsetQuestionList");
-            return;
-        }
-
-        return questions
-    };
 
     getProblemCategories = async () => {
         return [

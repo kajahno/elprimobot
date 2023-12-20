@@ -87,29 +87,10 @@ export class Leetcode {
     }
 
     /*
-        Builds a random problem object from the problem set
-    */
-    _getRandomProblem = async () => {
-        const problemSet = await this.leetcodeData.getStaticProblemSet();
-
-        if (!problemSet) {
-            logger.error("Unable to get statidProblemSet data");
-            return;
-        }
-
-        const randomProblem = problemSet[Math.floor(Math.random() * problemSet.length)];
-
-        return {
-            ...randomProblem,
-            link: `/problems/${randomProblem.titleSlug}/`,
-        };
-    }
-
-    /*
         Get random problem message embed
     */
     getRandomProblemMessage = async () => {
-        const randomProblemObj = await this._getRandomProblem();
+        const randomProblemObj = await this.leetcodeData.getRandomProblem();
 
         if (!randomProblemObj) {
             logger.error("Unable to fetch problemSet");

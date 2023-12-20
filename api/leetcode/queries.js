@@ -100,7 +100,11 @@ export async function weeklyGetLeetcodeData() {
     return response.json();
 }
 
-export async function getProblemSet() {
+export async function getProblemSet(limit = 1, skip = 0) {
+    if (limit < 1) {
+        logger.error("limit must be greater than 0");
+        return;
+    }
     const data = {
         query: `
             query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) {
@@ -131,7 +135,7 @@ export async function getProblemSet() {
                 }
                 }
             }`,
-        variables: { categorySlug: "all-code-essentials", limit: 10, skip: 0, filters: {} },
+        variables: { categorySlug: "all-code-essentials", limit, skip, filters: {} },
     };
 
     const response = await fetch(`${URL}/graphql/`, {
