@@ -1,6 +1,6 @@
 import { MessageEmbed } from "discord.js";
 import { URL } from "./leetcode/index.js";
-import { LeetcodeData } from "./index.js";
+import { LeetcodeData } from "./leetcode-data.js";
 import { config } from "../config.js";
 import logger from "../logging.js";
 
@@ -36,7 +36,7 @@ export class Leetcode {
             this.channel = await this._getLeetCodeChannel();
         }
         await this.channel.send(message);
-    }
+    };
 
     /*
         Fetch the leetcode weekly challenge and send a message to the channel
@@ -84,7 +84,7 @@ export class Leetcode {
             return;
         }
         await this._postMessageIntoChannel(randomProblemMessage);
-    }
+    };
 
     /*
         Get random problem message embed
@@ -100,10 +100,12 @@ export class Leetcode {
         return {
             content: "**Leetcode Random Problem**", // This is the first line of the message
             embeds: [
-                await this._buildDetailedProblemMessage({...randomProblemObj, color: this.MESSAGE_COLORS.RANDOM})
-            ]
-        }
-    }
+                await this._buildDetailedProblemMessage(
+                    { ...randomProblemObj, color: this.MESSAGE_COLORS.RANDOM },
+                ),
+            ],
+        };
+    };
 
     /*
         Get daily problem message embed
@@ -119,10 +121,12 @@ export class Leetcode {
         return {
             content: "**Leetcode Daily**", // This is the first line of the message
             embeds: [
-                await this._buildDetailedProblemMessage({...dailyProblemObj, color: this.MESSAGE_COLORS.DAILY})
-            ]
-        }
-    }
+                await this._buildDetailedProblemMessage(
+                    { ...dailyProblemObj, color: this.MESSAGE_COLORS.DAILY },
+                ),
+            ],
+        };
+    };
 
     /*
         Get weekly problem message embed
@@ -138,34 +142,32 @@ export class Leetcode {
         return {
             content: "**Leetcode Weekly**", // This is the first line of the message
             embeds: [
-                await this._buildSimplifiedProblemMessage({...weeklyProblemObj, color: this.MESSAGE_COLORS.WEEKLY})
-            ]
-        }
-    }
+                await this._buildSimplifiedProblemMessage(
+                    { ...weeklyProblemObj, color: this.MESSAGE_COLORS.WEEKLY },
+                ),
+            ],
+        };
+    };
 
     /*
         Builds a discord Leetcode challenge detailed message
     */
-    _buildDetailedProblemMessage = async (problem) => {
-        return new MessageEmbed()
-            .setColor(problem.color)
-            .setTitle(`${problem.frontendQuestionId}. ${problem.title}`)
-            .setURL(`${URL}${problem.link}`)
-            .addFields(
-                { name: "Difficulty", value: "```" + problem.difficulty + "\n```", inline: true },
-                { name: "Success rate", value: "```" + Number.parseFloat(problem.acRate).toFixed(2) + "```", inline: true },
-            );
-    }
+    static _buildDetailedProblemMessage = async (problem) => new MessageEmbed()
+        .setColor(problem.color)
+        .setTitle(`${problem.frontendQuestionId}. ${problem.title}`)
+        .setURL(`${URL}${problem.link}`)
+        .addFields(
+            { name: "Difficulty", value: "```" + problem.difficulty + "\n```", inline: true },
+            { name: "Success rate", value: "```" + Number.parseFloat(problem.acRate).toFixed(2) + "```", inline: true },
+        );
 
     /*
         Builds a discord Leetcode challenge simplified message
     */
-    _buildSimplifiedProblemMessage = async (problem) => {
-        return new MessageEmbed()
-            .setColor(problem.color)
-            .setTitle(`${problem.questionFrontendId}. ${problem.title}`)
-            .setURL(`${URL}${problem.link}`)
-            .addFields({ name: "Remaining time", value: `${problem.remainingTimeMessage}`, inline: false })
-            .setFooter({ text: "Time to code 🔥👨‍💻🔥" });
-    }
+    static _buildSimplifiedProblemMessage = async (problem) => new MessageEmbed()
+        .setColor(problem.color)
+        .setTitle(`${problem.questionFrontendId}. ${problem.title}`)
+        .setURL(`${URL}${problem.link}`)
+        .addFields({ name: "Remaining time", value: `${problem.remainingTimeMessage}`, inline: false })
+        .setFooter({ text: "Time to code 🔥👨‍💻🔥" });
 }
