@@ -1,6 +1,6 @@
 import { MessageEmbed } from "discord.js";
 import { URL } from "./leetcode/index.js";
-import { LeetcodeData } from "./leetcode-data.js";
+import { getDailyProblem, getWeeklyProblem, getRandomProblem } from "./leetcode-data.js";
 import { config } from "../config.js";
 import logger from "../logging.js";
 
@@ -13,7 +13,6 @@ export class Leetcode {
 
     constructor(discordClient) {
         this.client = discordClient;
-        this.leetcodeData = new LeetcodeData();
         this.MESSAGE_COLORS = {
             DAILY: "#00FFFF",
             WEEKLY: "#FFBF00",
@@ -39,18 +38,6 @@ export class Leetcode {
     };
 
     /*
-        Fetch the leetcode weekly challenge and send a message to the channel
-    */
-    _postWeeklyIntoChannel = async () => {
-        const weeklyMessage = await this.getWeeklyProblemMessage();
-        if (!weeklyMessage) {
-            logger.error("Unable to fetch problem message");
-            return;
-        }
-        await this._postMessageIntoChannel(weeklyMessage);
-    };
-
-    /*
         Fetch the leetcode daily challenge and send a message to the channel
     */
     postDailyChallenge = async () => {
@@ -71,7 +58,7 @@ export class Leetcode {
             logger.error("Unable to fetch weekly challenge message");
             return;
         }
-        await this._postWeeklyIntoChannel(weeklyMessage);
+        await this._postMessageIntoChannel(weeklyMessage);
     };
 
     /*
@@ -90,7 +77,7 @@ export class Leetcode {
         Get random problem message embed
     */
     getRandomProblemMessage = async () => {
-        const randomProblemObj = await this.leetcodeData.getRandomProblem();
+        const randomProblemObj = await getRandomProblem();
 
         if (!randomProblemObj) {
             logger.error("Unable to fetch problemSet");
@@ -100,7 +87,7 @@ export class Leetcode {
         return {
             content: "**Leetcode Random Problem**", // This is the first line of the message
             embeds: [
-                await this._buildDetailedProblemMessage(
+                await Leetcode.buildDetailedProblemMessage(
                     { ...randomProblemObj, color: this.MESSAGE_COLORS.RANDOM },
                 ),
             ],
@@ -111,7 +98,7 @@ export class Leetcode {
         Get daily problem message embed
     */
     getDailyProblemMessage = async () => {
-        const dailyProblemObj = await this.leetcodeData.getDailyProblem();
+        const dailyProblemObj = await getDailyProblem();
 
         if (!dailyProblemObj) {
             logger.error("Unable to fetch the daily problem");
@@ -121,7 +108,7 @@ export class Leetcode {
         return {
             content: "**Leetcode Daily**", // This is the first line of the message
             embeds: [
-                await this._buildDetailedProblemMessage(
+                await Leetcode.buildDetailedProblemMessage(
                     { ...dailyProblemObj, color: this.MESSAGE_COLORS.DAILY },
                 ),
             ],
@@ -132,7 +119,7 @@ export class Leetcode {
         Get weekly problem message embed
     */
     getWeeklyProblemMessage = async () => {
-        const weeklyProblemObj = await this.leetcodeData.getWeeklyProblem();
+        const weeklyProblemObj = await getWeeklyProblem();
 
         if (!weeklyProblemObj) {
             logger.error("Unable to fetch the daily problem");
@@ -142,7 +129,7 @@ export class Leetcode {
         return {
             content: "**Leetcode Weekly**", // This is the first line of the message
             embeds: [
-                await this._buildSimplifiedProblemMessage(
+                await Leetcode.buildSimplifiedProblemMessage(
                     { ...weeklyProblemObj, color: this.MESSAGE_COLORS.WEEKLY },
                 ),
             ],
@@ -152,7 +139,7 @@ export class Leetcode {
     /*
         Builds a discord Leetcode challenge detailed message
     */
-    static _buildDetailedProblemMessage = async (problem) => new MessageEmbed()
+    static buildDetailedProblemMessage = async (problem) => new MessageEmbed()
         .setColor(problem.color)
         .setTitle(`${problem.frontendQuestionId}. ${problem.title}`)
         .setURL(`${URL}${problem.link}`)
@@ -164,7 +151,7 @@ export class Leetcode {
     /*
         Builds a discord Leetcode challenge simplified message
     */
-    static _buildSimplifiedProblemMessage = async (problem) => new MessageEmbed()
+    static buildSimplifiedProblemMessage = async (problem) => new MessageEmbed()
         .setColor(problem.color)
         .setTitle(`${problem.questionFrontendId}. ${problem.title}`)
         .setURL(`${URL}${problem.link}`)
