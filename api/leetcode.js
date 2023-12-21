@@ -108,7 +108,7 @@ export class Leetcode {
             return;
         }
 
-        const categories = await getProblemCategories();
+        const categories = getProblemCategories();
 
         return {
             content: `**Leetcode Random ${categories[category]} challenge**`, // This is the first line of the message
