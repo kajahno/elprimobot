@@ -154,3 +154,17 @@ export async function getProblemSet(limit = 1, skip = 0) {
 
     return response.json();
 }
+
+export async function getProblemSetFromCategory(category) {
+    const response = await fetch(`${URL}/problems/tag-data/question-tags/${category}/`, {
+        method: "GET",
+        headers,
+    });
+
+    if (response.status !== 200) {
+        logger.error("could not fetch: ", response.status);
+        return;
+    }
+
+    return response.json();
+}

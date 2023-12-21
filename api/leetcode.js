@@ -1,6 +1,9 @@
 import { MessageEmbed } from "discord.js";
 import { URL } from "./leetcode/index.js";
-import { getDailyProblem, getWeeklyProblem, getRandomProblem } from "./leetcode-data.js";
+import {
+    getDailyProblem, getWeeklyProblem, getRandomProblem,
+    getProblemCategories, getRandomProblemFromCategory,
+} from "./leetcode-data.js";
 import { config } from "../config.js";
 import logger from "../logging.js";
 
@@ -86,6 +89,29 @@ export class Leetcode {
 
         return {
             content: "**Leetcode Random Problem**", // This is the first line of the message
+            embeds: [
+                await Leetcode.buildDetailedProblemMessage(
+                    { ...randomProblemObj, color: this.MESSAGE_COLORS.RANDOM },
+                ),
+            ],
+        };
+    };
+
+    /*
+        Get random problem from category message embed
+    */
+    getRandomProblemFromCategoryMessage = async (category) => {
+        const randomProblemObj = await getRandomProblemFromCategory(category);
+
+        if (!randomProblemObj) {
+            logger.error("Unable to fetch problemSet");
+            return;
+        }
+
+        const categories = await getProblemCategories();
+
+        return {
+            content: `**Leetcode Random ${categories[category]} challenge**`, // This is the first line of the message
             embeds: [
                 await Leetcode.buildDetailedProblemMessage(
                     { ...randomProblemObj, color: this.MESSAGE_COLORS.RANDOM },

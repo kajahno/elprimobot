@@ -1,4 +1,6 @@
-import { dailyGetLeetcodeData, weeklyGetLeetcodeData, getProblemSet } from "./leetcode/index.js";
+import {
+    dailyGetLeetcodeData, weeklyGetLeetcodeData, getProblemSet, getProblemSetFromCategory,
+} from "./leetcode/index.js";
 import logger from "../logging.js";
 
 export async function getProblemSetData(limit, skip) {
@@ -40,6 +42,22 @@ export async function getRandomProblem() {
     };
 }
 
+export async function getRandomProblemFromCategory(category) {
+    const problems = (await getProblemSetFromCategory(category))?.questions;
+    if (!problems) {
+        logger.error("Unable to fetch problems from category: ", category);
+        return;
+    }
+
+    const randomProblemIndex = Math.floor(Math.random() * problems.length);
+
+    return {
+        ...problems[randomProblemIndex],
+        frontendQuestionId: problems[randomProblemIndex].questionFrontendId,
+        link: `/problems/${problems[randomProblemIndex].titleSlug}/`,
+    };
+}
+
 export async function getDailyProblem() {
     const activeDailyCodingChallengeQuestion = (await dailyGetLeetcodeData())
         ?.data?.activeDailyCodingChallengeQuestion;
@@ -76,29 +94,29 @@ export async function getWeeklyProblem() {
 }
 
 export async function getProblemCategories() {
-    return [
-        "Array",
-        "Backtracking",
-        "Binary Search",
-        "Bit Manipulation",
-        "Divide and Conquer",
-        "Dynamic Programming",
-        "Greedy",
-        "Hash Table",
-        "Heap (Priority Queue)",
-        "Linked List",
-        "Math",
-        "Matrix",
-        "Merge Sort",
-        "Monotonic Stack",
-        "Recursion",
-        "Simulation",
-        "Sliding Window",
-        "Sorting",
-        "Stack",
-        "String Matching",
-        "String",
-        "Trie",
-        "Two Pointers",
-    ];
+    return {
+        array: "Array",
+        backtracking: "Backtracking",
+        "binary-search": "Binary Search",
+        "bit-manipulation": "Bit Manipulation",
+        "divide-and-conquer": "Divide and Conquer",
+        "dynamic-programming": "Dynamic Programming",
+        greedy: "Greedy",
+        "hash-table": "Hash Table",
+        "heap-priority-queue": "Heap (Priority Queue)",
+        "linked-list": "Linked List",
+        math: "Math",
+        matrix: "Matrix",
+        "merge-sort": "Merge Sort",
+        "monotonic-stack": "Monotonic Stack",
+        recursion: "Recursion",
+        simulation: "Simulation",
+        "sliding-window": "Sliding Window",
+        sorting: "Sorting",
+        stack: "Stack",
+        "string-matching": "String Matching",
+        string: "String",
+        trie: "Trie",
+        "two-pointers": "Two Pointers",
+    };
 }
