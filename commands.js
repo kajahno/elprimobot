@@ -1,5 +1,4 @@
-import { getRPSChoices } from "./game.js";
-import { capitalize, DiscordRequest } from "./utils.js";
+import { DiscordRequest } from "./utils.js";
 import { getProblemCategories } from "./api/index.js";
 import logger from "./logging.js";
 
@@ -10,67 +9,50 @@ export async function InstallGuildCommand(appId, guildId, command) {
     // install command
     try {
         await DiscordRequest(endpoint, { method: "POST", body: command });
+        logger.info(`Installed "${command.name}"`);
     } catch (err) {
         logger.error(err);
     }
 }
 
-// Checks for a command
-async function HasGuildCommand(appId, guildId, command) {
+export async function UninstallGuildCommand(appId, guildId, command) {
     // API endpoint to get and post guild commands
     const endpoint = `applications/${appId}/guilds/${guildId}/commands`;
-
+    // install command
     try {
         const res = await DiscordRequest(endpoint, { method: "GET" });
         const data = await res.json();
-        if (data) {
-            InstallGuildCommand(appId, guildId, command);
-            logger.info(`Installing "${command.name}"`);
+        const commands = data.filter((c) => c.name === command.name);
+        if (commands.length > 0) {
+            await DiscordRequest(`${endpoint}/${commands[0].id}`, { method: "DELETE" });
+            logger.info(`Deleted "${command.name}"`);
+        } else {
+            logger.info(`Command "${command.name}" not found. Nothing to delete.`);
         }
     } catch (err) {
         logger.error(err);
     }
 }
 
-export async function HasGuildCommands(appId, guildId, commands) {
+export async function UninstallGuildCommands(appId, guildId, commands) {
     if (guildId === "" || appId === "") return;
 
-    commands.forEach((c) => HasGuildCommand(appId, guildId, c));
+    commands.forEach((c) => UninstallGuildCommand(appId, guildId, c));
 }
 
-// Get the game choices from game.js
-function createCommandChoices() {
-    const choices = getRPSChoices();
-    const commandChoices = [];
+export async function InstallGuildCommands(appId, guildId, commands) {
+    if (guildId === "" || appId === "") return;
 
-    choices.forEach((choice) => {
-        commandChoices.push({
-            name: capitalize(choice),
-            value: choice.toLowerCase(),
-        });
-    });
-
-    return commandChoices;
+    commands.forEach((c) => InstallGuildCommand(appId, guildId, c));
 }
 
 // Get the challenge categories from api/leetcode-data.js
 export async function challengeCategoriesCommandChoices() {
-    const commandChoices = [];
-    for (const [key, value] of Object.entries(await getProblemCategories())) {
-        commandChoices.push({
-            name: key,
-            value,
-        });
-    }
-    return commandChoices;
+    return Object.entries(await getProblemCategories()).map(([key, value]) => ({
+        name: value,
+        value: key,
+    }));
 }
-
-// Simple test command
-export const TEST_COMMAND = {
-    name: "test",
-    description: "Basic guild command",
-    type: 1,
-};
 
 export const RANDOM_PROBLEM_COMMAND = {
     name: "randomproblem",
@@ -88,22 +70,6 @@ export const PROBLEM_FROM_SET_COMMAND = {
             description: "Pick your category",
             required: true,
             choices: (await challengeCategoriesCommandChoices()),
-        },
-    ],
-    type: 1,
-};
-
-// Command containing options
-export const CHALLENGE_COMMAND = {
-    name: "challenge",
-    description: "Challenge to a match of rock paper scissors",
-    options: [
-        {
-            type: 3,
-            name: "object",
-            description: "Pick your object",
-            required: true,
-            choices: createCommandChoices(),
         },
     ],
     type: 1,

@@ -109,10 +109,9 @@ export class Leetcode {
         }
 
         const categories = await getProblemCategories();
-        const categoryName = Object.keys(categories).find((key) => categories[key] === category);
 
         return {
-            content: `**Leetcode Random ${categoryName} challenge**`, // This is the first line of the message
+            content: `**Leetcode Random ${categories[category]} challenge**`, // This is the first line of the message
             embeds: [
                 await Leetcode.buildDetailedProblemMessage(
                     { ...randomProblemObj, color: this.MESSAGE_COLORS.RANDOM },
