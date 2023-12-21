@@ -1,3 +1,3 @@
-import { dailyGetLeetcodeData, weeklyGetLeetcodeData, URL } from "./queries.js";
+import { dailyGetLeetcodeData, weeklyGetLeetcodeData, getProblemSet, URL } from "./queries.js";
 
-export { dailyGetLeetcodeData, weeklyGetLeetcodeData, URL };
+export { dailyGetLeetcodeData, weeklyGetLeetcodeData, getProblemSet, URL };
