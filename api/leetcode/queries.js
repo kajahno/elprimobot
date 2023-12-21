@@ -135,7 +135,9 @@ export async function getProblemSet(limit = 1, skip = 0) {
                 }
                 }
             }`,
-        variables: { categorySlug: "all-code-essentials", limit, skip, filters: {} },
+        variables: {
+            categorySlug: "all-code-essentials", limit, skip, filters: {},
+        },
     };
 
     const response = await fetch(`${URL}/graphql/`, {

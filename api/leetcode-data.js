@@ -2,31 +2,34 @@ import { dailyGetLeetcodeData, weeklyGetLeetcodeData, getProblemSet } from "./le
 import logger from "../logging.js";
 
 export class LeetcodeData {
-
-    getProblemSetData = async (limit, skip) => {
-        const challenges = (await getProblemSet(limit, skip))?.data?.problemsetQuestionList?.questions;
+    static getProblemSetData = async (limit, skip) => {
+        const challenges = (await getProblemSet(limit, skip))
+            ?.data?.problemsetQuestionList?.questions;
         if (!challenges) {
             logger.error("Unable to fetch problemsetQuestionList");
             return;
         }
-        return challenges
+        return challenges;
     };
 
-    getNumProblems = async () => {
+    static getNumProblems = async () => {
         const totalProblems = (await getProblemSet())?.data?.problemsetQuestionList?.total;
         if (!totalProblems) {
             logger.error("Unable to fetch problemsetQuestionList");
             return;
         }
         return totalProblems;
-    }
+    };
 
-    getRandomProblem = async () => {
+    static getRandomProblem = async () => {
         const totalProblems = await this.getNumProblems();
 
         const randomProblemIndex = Math.floor(Math.random() * totalProblems);
 
-        const randomProblem = await this.getProblemSetData(1, Math.min(randomProblemIndex, totalProblems - 1));
+        const randomProblem = await this.getProblemSetData(
+            1,
+            Math.min(randomProblemIndex, totalProblems - 1),
+        );
         if (!randomProblem) {
             logger.error("Unable to fetch problem with ID: ", randomProblemIndex);
             return;
@@ -36,10 +39,11 @@ export class LeetcodeData {
             ...randomProblem[0],
             link: `/problems/${randomProblem[0].titleSlug}/`,
         };
-    }
+    };
 
-    getDailyProblem = async () => {
-        const activeDailyCodingChallengeQuestion = (await dailyGetLeetcodeData())?.data?.activeDailyCodingChallengeQuestion;
+    static getDailyProblem = async () => {
+        const activeDailyCodingChallengeQuestion = (await dailyGetLeetcodeData())
+            ?.data?.activeDailyCodingChallengeQuestion;
         if (!activeDailyCodingChallengeQuestion) {
             logger.error("Unable to fetch dailyGetLeetcodeData");
             return;
@@ -48,10 +52,11 @@ export class LeetcodeData {
             ...activeDailyCodingChallengeQuestion.question,
             link: activeDailyCodingChallengeQuestion.link,
         };
-    }
+    };
 
-    getWeeklyProblem = async () => {
-        const weeklyChallenges = (await weeklyGetLeetcodeData())?.data?.dailyCodingChallengeV2?.weeklyChallenges;
+    static getWeeklyProblem = async () => {
+        const weeklyChallenges = (await weeklyGetLeetcodeData())
+            ?.data?.dailyCodingChallengeV2?.weeklyChallenges;
         if (!weeklyChallenges) {
             logger.error("Unable to fetch weeklyGetLeetcodeData");
             return;
@@ -69,33 +74,31 @@ export class LeetcodeData {
             link: lastWeeklyProblemData.link,
             remainingTimeMessage,
         };
-    }
-
-    getProblemCategories = async () => {
-        return [
-            "Array",
-            "Backtracking",
-            "Binary Search",
-            "Bit Manipulation",
-            "Divide and Conquer",
-            "Dynamic Programming",
-            "Greedy",
-            "Hash Table",
-            "Heap (Priority Queue)",
-            "Linked List",
-            "Math",
-            "Matrix",
-            "Merge Sort",
-            "Monotonic Stack",
-            "Recursion",
-            "Simulation",
-            "Sliding Window",
-            "Sorting",
-            "Stack",
-            "String Matching",
-            "String",
-            "Trie",
-            "Two Pointers",
-        ]
     };
+
+    static getProblemCategories = async () => [
+        "Array",
+        "Backtracking",
+        "Binary Search",
+        "Bit Manipulation",
+        "Divide and Conquer",
+        "Dynamic Programming",
+        "Greedy",
+        "Hash Table",
+        "Heap (Priority Queue)",
+        "Linked List",
+        "Math",
+        "Matrix",
+        "Merge Sort",
+        "Monotonic Stack",
+        "Recursion",
+        "Simulation",
+        "Sliding Window",
+        "Sorting",
+        "Stack",
+        "String Matching",
+        "String",
+        "Trie",
+        "Two Pointers",
+    ];
 }
