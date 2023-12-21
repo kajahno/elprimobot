@@ -93,7 +93,7 @@ export async function getWeeklyProblem() {
     };
 }
 
-export async function getProblemCategories() {
+export function getProblemCategories() {
     return {
         array: "Array",
         backtracking: "Backtracking",

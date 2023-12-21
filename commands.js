@@ -47,8 +47,8 @@ export async function InstallGuildCommands(appId, guildId, commands) {
 }
 
 // Get the challenge categories from api/leetcode-data.js
-export async function challengeCategoriesCommandChoices() {
-    return Object.entries(await getProblemCategories()).map(([key, value]) => ({
+export function challengeCategoriesCommandChoices() {
+    return Object.entries(getProblemCategories()).map(([key, value]) => ({
         name: value,
         value: key,
     }));
@@ -69,7 +69,7 @@ export const PROBLEM_FROM_SET_COMMAND = {
             name: "category",
             description: "Pick your category",
             required: true,
-            choices: (await challengeCategoriesCommandChoices()),
+            choices: challengeCategoriesCommandChoices(),
         },
     ],
     type: 1,

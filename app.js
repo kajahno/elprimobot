@@ -174,7 +174,3 @@ y.command({
 });
 
 y.parse(process.argv.slice(2));
-
-process.on("SIGTERM", () => {
-    logger.info("SIGTERM signal received. Gracefully shutting down process.");
-});
