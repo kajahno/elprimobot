@@ -2,17 +2,18 @@
   "name": "elprimobot",
   "version": "1.0.0",
   "description": "",
-  "main": "app.js",
-  "type": "module",
+  "main": "es5-packaged/app.js",
   "scripts": {
-    "start": "node app.js",
-    "prodstart": "./node_modules/.bin/eslint . && node app.js",
-    "build": "./node_modules/.bin/eslint . && babel . --ignore node_modules,es5-packaged,puppeteer --out-dir es5-packaged",
-    "package": "./node_modules/.bin/pkg -t node16-linuxstatic-x64,node16-win-x64 -o elprimobot es5-packaged/app.js",
+    "start": "tsc && node es5-packaged/app.js",
+    "prodstart": "./node_modules/.bin/eslint . && tsc --watch app.ts",
+    "build": "./node_modules/.bin/eslint . && tsc --build",
+    "package": "./node_modules/.bin/pkg -t node18-linuxstatic-x64,node18-win-x64 -o elprimobot es5-packaged/app.js",
     "deploy": "rsync  -avz elprimobot-linuxstatic elprimobot:~/elprimobot/",
     "lint": "./node_modules/.bin/eslint .",
-    "lint:fix": "./node_modules/.bin/eslint --fix .",
-    "dev": "nodemon app.js"
+    "lint:fix": "./node_modules/.bin/eslint --fix ."
+  },
+  "bin": {
+    "elprimobot": "es5-packaged/app.js"
   },
   "author": "Karl Jahn",
   "license": "MIT",
@@ -24,6 +25,7 @@
     "express": "^4.18.1",
     "morgan": "^1.10.0",
     "node-fetch": "^2.6.7",
+    "typescript": "^5.3.3",
     "winston": "^3.8.2",
     "yargs": "^17.6.0"
   },

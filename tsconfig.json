@@ -1,0 +1,25 @@
+{
+    "compilerOptions": {
+        "noImplicitAny": false,
+        "module": "commonjs",
+        "noEmitOnError": true,
+        "removeComments": true,
+        "sourceMap": false,
+        "target": "es2017",
+        "preserveConstEnums": true,
+        "outDir": "es5-packaged",
+        "allowJs": true,
+        "skipLibCheck": true,
+        "esModuleInterop": true,
+    },
+    "include": [
+        "app.ts",
+        "*.js",
+        "middleware/*",
+        "api/**/*",
+    ],
+    "exclude": [
+        "node_modules/**/*",
+        "dist"
+    ]
+}
