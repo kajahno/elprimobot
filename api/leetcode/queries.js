@@ -4,8 +4,17 @@ import logger from "../../logging.js";
 const headers = {
     "Content-Type": "application/json",
     "Accept-Encoding": "gzip, deflate, br",
+    "Accept-Language": "en-GB,en;q=0.5",
+    Accept: "*/*",
     "Sec-Fetch-Mode": "cors",
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0",
+    Connection: "keep-alive",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Site": "same-origin",
+    Origin: "https://leetcode.com",
+    "Sec-GPC": "1",
+    TE: "trailers",
+    Referer: "https://leetcode.com/problemset/",
 };
 
 export const URL = "https://leetcode.com";
