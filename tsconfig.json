@@ -13,13 +13,6 @@
         "esModuleInterop": true,
     },
     "include": [
-        "app.ts",
-        "*.js",
-        "middleware/*",
-        "api/**/*",
+        "lib/**/*",
     ],
-    "exclude": [
-        "node_modules/**/*",
-        "dist"
-    ]
 }
