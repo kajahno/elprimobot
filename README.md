@@ -12,12 +12,14 @@ It's a bot to help you manage Discord communities, especially those with program
 
 ### Requirements
 
-* Install [nodejs16](https://nodejs.org/download/release/latest-v16.x/)
+> Note: if you use [NixOs](https://nixos.org/download) you can just `nix-shell` and enter a shell with the dependencies.
+
+* Install [nodejs18](https://nodejs.org/download/release/latest-v18.x/)
 * Install dependencies:
 ```bash
 npm install
 ```
-* On the discord side: 
+* On the discord side:
   * bot to be configured as explained in [here](https://discord.com/developers/docs/getting-started)
   * A server with the app running
   * The callback URL configured (we used nginx with letsencrypt)
@@ -43,4 +45,3 @@ The commands are included in package.json.
 ## Deploying
 
 Currently the assumption is that the target is configured using SSH (either using a config file or an agent).
-

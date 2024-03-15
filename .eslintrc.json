@@ -29,7 +29,7 @@
             "double"
         ],
         "camelcase": [
-            "error", { 
+            "error", {
                 "properties": "never",
                 "ignoreDestructuring": true,
                 "ignoreImports": true
