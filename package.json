@@ -2,18 +2,22 @@
   "name": "elprimobot",
   "version": "1.0.0",
   "description": "",
-  "main": "es5-packaged/app.js",
+  "main": "es5-packaged/index.js",
   "scripts": {
-    "start": "tsc && node es5-packaged/app.js",
+    "start": "tsc && node es5-packaged/index.js",
     "prodstart": "./node_modules/.bin/eslint . && tsc --watch app.ts",
     "build": "./node_modules/.bin/eslint . && tsc --build",
-    "package": "./node_modules/.bin/pkg -t node18-linuxstatic-x64,node18-win-x64 -o elprimobot es5-packaged/app.js",
+    "package": "./node_modules/.bin/pkg -t node18-linuxstatic-x64,node18-win-x64 -o elprimobot es5-packaged/index.js",
     "deploy": "rsync  -avz elprimobot-linuxstatic elprimobot:~/elprimobot/",
+    "clean": "rm -rf es5-packaged && rm -rf elprimobot-*",
     "lint": "./node_modules/.bin/eslint .",
     "lint:fix": "./node_modules/.bin/eslint --fix ."
   },
   "bin": {
-    "elprimobot": "es5-packaged/app.js"
+    "elprimobot": "es5-packaged/index.js"
+  },
+  "prettier": {
+    "singleQuote": true
   },
   "author": "Karl Jahn",
   "license": "MIT",
@@ -33,8 +37,14 @@
     "@babel/cli": "^7.19.3",
     "@babel/core": "^7.19.3",
     "@babel/preset-env": "^7.19.3",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.26",
+    "@types/yargs": "^17.0.32",
+    "@typescript-eslint/eslint-plugin": "^7.2.0",
+    "@typescript-eslint/parser": "^7.2.0",
     "eslint": "^8.26.0",
     "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-airbnb-typescript": "^18.0.0",
     "eslint-plugin-import": "^2.26.0",
     "pkg": "^5.8.0"
   }
