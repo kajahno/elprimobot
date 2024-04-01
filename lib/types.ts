@@ -9,3 +9,20 @@ export interface IDiscordInteractionsRequestBody {
     }>;
   };
 }
+
+export interface IDiscordGuildCommandDefinition {
+  id?: number;
+  name: string;
+  description: string;
+  type: number;
+  options?: Array<{
+    name: string;
+    description: string;
+    type: number;
+    required: boolean;
+    choices?: Array<{
+      name: string;
+      value: string;
+    }>;
+  }>;
+}
