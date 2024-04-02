@@ -4,7 +4,6 @@ import {
 import { config } from '../config';
 import logger from '../logging';
 import { IDiscordUserStats, IDiscordUserStatsActivity, IDiscordUserStatsActivityMessage } from '../types';
-import { debug } from 'console';
 
 // helper to get days ago
 const daysAgo = (days: number): Date => {
@@ -66,7 +65,10 @@ export class Stats {
      * active contains the set of users with some stats
      * inactive is a list of names without stats
      */
-  static _getActivityFromStats = (stats: Map<string, IDiscordUserStats>): IDiscordUserStatsActivity => {
+  static _getActivityFromStats = (
+    stats: Map<string, IDiscordUserStats>,
+  ):
+  IDiscordUserStatsActivity => {
     const active = [];
     const inactive = [];
     for (const [username, userStats] of stats) {
@@ -108,7 +110,7 @@ export class Stats {
 
     const activityFromStats = Stats._getActivityFromStats(stats);
     const activeThisWeek = new Set();
-    for (const userStats  of activityFromStats.active) {
+    for (const userStats of activityFromStats.active) {
       activeThisWeek.add(userStats.username);
     }
 
@@ -239,7 +241,7 @@ export class Stats {
 
       for (const message of messages) {
         const messageUser = (message).author;
-        const userStats = stats.get(messageUser.username) as IDiscordUserStats || Stats._defaultStats();
+        const userStats = stats.get(messageUser.username) || Stats._defaultStats();
         userStats.posts++;
         userStats.words += message.content.split(' ').length;
         userStats.letters += message.content.length;
@@ -265,9 +267,9 @@ export class Stats {
       return;
     }
 
-    let postsValue = "";
+    let postsValue = '';
     for (const userStats of activeStats) {
-      postsValue += `**${userStats.username}** **(** ${userStats.posts} **|** ${userStats.words} **|** ${userStats.letters}** )**` + "\n";
+      postsValue += `**${userStats.username}** **(** ${userStats.posts} **|** ${userStats.words} **|** ${userStats.letters}** )**\n`;
     }
 
     const message = new MessageEmbed()
