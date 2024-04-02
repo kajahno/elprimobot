@@ -1,5 +1,7 @@
 import { InteractionType } from 'discord-interactions';
+import { ColorResolvable, EmbedField } from 'discord.js';
 
+// Discord types
 export interface IDiscordInteractionsRequestBody {
   type: InteractionType;
   data: {
@@ -8,4 +10,86 @@ export interface IDiscordInteractionsRequestBody {
       value: string; // or any other type depending on the actual values
     }>;
   };
+}
+
+export interface IDiscordGuildCommandDefinition {
+  id?: number;
+  name: string;
+  description: string;
+  type: number;
+  options?: Array<{
+    name: string;
+    description: string;
+    type: number;
+    required: boolean;
+    choices?: Array<{
+      name: string;
+      value: string;
+    }>;
+  }>;
+}
+
+export interface IDiscordUserStats {
+  username?: string;
+  posts: number;
+  words?: number;
+  letters?: number;
+}
+
+export interface IDiscordUserStatsActivity {
+  active: Array<IDiscordUserStats>;
+  inactive: Array<string>;
+}
+
+export interface IDiscordUserStatsActivityMessage {
+  activeUsers?: Array<IDiscordUserStats>;
+  inactivityMessages: Array<EmbedField>;
+}
+
+// Leetcode graphql types
+export interface ILeetcodeProblem {
+  questionId: string;
+  link?: string;
+  title: string;
+  questionFrontendId?: string;
+  frontendQuestionId?: string;
+  titleSlug: string;
+  difficulty: string;
+  remainingTimeMessage?: string;
+  color?: ColorResolvable;
+  acRate?: number;
+}
+
+export interface ILeetcodeProblemSetQuestionList {
+  data?: {
+    problemsetQuestionList?: {
+      questions: Array<ILeetcodeProblem>;
+      total: number;
+    }
+  };
+}
+
+export interface ILeetcodeDailyChallenge {
+  data?: {
+    activeDailyCodingChallengeQuestion?: {
+      question: ILeetcodeProblem;
+      link: string;
+    }
+  };
+}
+
+export interface ILeetcodeWeeklyChallenges {
+  data?: {
+    dailyCodingChallengeV2?: {
+      weeklyChallenges: Array<{
+        question: ILeetcodeProblem;
+        link: string;
+        date: string;
+      }>
+    }
+  }
+}
+
+export interface ILeetcodeProblemSetFromCategory {
+  questions?: Array<ILeetcodeProblem>;
 }
