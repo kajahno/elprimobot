@@ -6,7 +6,6 @@ import {
   InteractionType,
   InteractionResponseType,
 } from 'discord-interactions';
-import { Client } from 'discord.js';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { config } from './config';
@@ -142,7 +141,7 @@ const y = yargs(hideBin(process.argv))
     'Sends leetcode daily problem to a Discord channel',
     async () => {},
     async () => {
-      const client = await getDiscordClient() as Client;
+      const client = await getDiscordClient();
       const leetcode = new Leetcode(client);
       await leetcode.postDailyChallenge();
       client.destroy();
@@ -153,7 +152,7 @@ const y = yargs(hideBin(process.argv))
     'Sends leetcode weekly problem to a Discord channel',
     async () => {},
     async () => {
-      const client = await getDiscordClient() as Client;
+      const client = await getDiscordClient();
       const leetcode = new Leetcode(client);
       await leetcode.postWeeklyChallenge();
       client.destroy();
@@ -164,7 +163,7 @@ const y = yargs(hideBin(process.argv))
     'Sends a random leetcode problem to a Discord channel',
     async () => {},
     async () => {
-      const client = await getDiscordClient() as Client;
+      const client = await getDiscordClient();
       const leetcode = new Leetcode(client);
       await leetcode.postRandomChallenge();
       client.destroy();
@@ -175,7 +174,7 @@ const y = yargs(hideBin(process.argv))
     'Sends Discord users weekly chat activity stats',
     async () => {},
     async () => {
-      const client = await getDiscordClient() as Client;
+      const client = await getDiscordClient();
       const stats = new Stats(client);
       await stats.postWeeklyStats();
       logger.info('destroying client');

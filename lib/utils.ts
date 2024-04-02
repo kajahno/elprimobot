@@ -1,7 +1,6 @@
 import fetch, { Response as HttpResponse, RequestInit } from 'node-fetch';
 import { verifyKey } from 'discord-interactions';
 import { Request, Response } from 'express';
-import { Client } from 'discord.js';
 import { Leetcode, Stats, getDiscordClient } from './api/index';
 import { config } from './config';
 import logger from './logging';
@@ -48,7 +47,7 @@ export async function DiscordRequest(
 }
 
 export async function postDailyMessages() {
-  const client = await getDiscordClient() as Client;
+  const client = await getDiscordClient();
   logger.info('postDailyMessages triggered at:', new Date(Date.now()).toUTCString());
 
   const leetcode = new Leetcode(client);
@@ -58,7 +57,7 @@ export async function postDailyMessages() {
 }
 
 export async function postWeeklyMessages() {
-  const client = await getDiscordClient() as Client;
+  const client = await getDiscordClient();
 
   logger.info('postWeeklyMessages triggered at:', new Date(Date.now()).toUTCString());
   const stats = new Stats(client);
