@@ -2,7 +2,7 @@ import {
   dailyGetLeetcodeData, weeklyGetLeetcodeData, getProblemSet, getProblemSetFromCategory,
 } from './leetcode/index';
 import logger from '../logging';
-import { ILeetcodeProblem, ILeetcodeProblemCategory } from '../types';
+import { ILeetcodeProblem } from '../types';
 
 export const getProblemSetData = async (
   limit: number,
