@@ -1,6 +1,5 @@
 import 'dotenv/config';
 
-import { CronJob } from 'cron';
 import express, { Express, Request, Response } from 'express';
 import {
   InteractionType,
@@ -8,6 +7,7 @@ import {
 } from 'discord-interactions';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
+import schedule = require('node-schedule');
 import { config } from './config';
 import {
   VerifyDiscordRequest, postDailyMessages, postWeeklyMessages,
@@ -94,29 +94,16 @@ const appListener = async () => {
  * Client commands that run recurrently (Crons) and blocking
  */
 const runDaemon = () => {
-  const daily = new CronJob(
-    config.DAILY_MESSAGE_CRON,
-    postDailyMessages as () => void,
-    null, // onComplete
-    true, // autostart
-    null, // timeZone
-    null, // context
-    null, // runOnInit
-    0, // utcOffset
-  );
-  logger.info(`daily cron has started and will next run at: ${daily.nextDate().toUTC(0).toISO()}`);
+  const daily = schedule.scheduleJob(config.DAILY_MESSAGE_CRON, postDailyMessages);
+  logger.info(`daily cron has started and will next run at: ${daily.nextInvocation().toISOString()}`);
 
-  const weekly = new CronJob(
-    config.WEEKLY_MESSAGE_CRON,
-    postWeeklyMessages as () => void,
-    null, // onComplete
-    true, // autostart
-    null, // timeZone
-    null, // context
-    null, // runOnInit
-    0, // utcOffset
-  );
-  logger.info(`weekly has started and will next run at: ${weekly.nextDate().toUTC(0).toISO()}`);
+  const weekly = schedule.scheduleJob(config.WEEKLY_MESSAGE_CRON, postWeeklyMessages);
+  logger.info(`weekly has started and will next run at: ${weekly.nextInvocation().toISOString()}`);
+
+  const heartbeat = schedule.scheduleJob('0 * * * * *', () => {
+    logger.info('heartbeat');
+  });
+  logger.info(`heartbeat will run next at: ${heartbeat.nextInvocation().toISOString()}`);
 
   app.use(morganMiddleware);
 
