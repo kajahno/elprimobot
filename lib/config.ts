@@ -10,4 +10,6 @@ export const config = {
   BOTS: new Set((process.env.BOTS || 'elprimobot').split(',')),
   DAILY_MESSAGE_CRON: process.env.DAILY_MESSAGE_CRON || undefined,
   WEEKLY_MESSAGE_CRON: process.env.WEEKLY_MESSAGE_CRON || undefined,
+  INACTIVITY_WEEKS_REMOVAL: parseInt(process.env.INACTIVITY_WEEKS_REMOVAL || '8', 10),
+  INACTIVITY_WEEKS_DB_PATH: process.env.INACTIVITY_WEEKS_DB_PATH || undefined,
 };

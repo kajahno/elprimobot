@@ -3,7 +3,8 @@ import {
 } from 'discord.js';
 import { config } from '../config';
 import logger from '../logging';
-import { IDiscordUserStats, IDiscordUserStatsActivity, IDiscordUserStatsActivityMessage } from '../types';
+import fs from 'node:fs';
+import { IDiscordUserStats, IDiscordUserStatsActivity, IDiscordUserStatsActivityMessage, IDiscordUserStatsInactivity } from '../types';
 
 // helper to get days ago
 const daysAgo = (days: number): Date => {
@@ -11,6 +12,14 @@ const daysAgo = (days: number): Date => {
   date.setDate(date.getDate() - days);
   return date;
 };
+
+const weeksAgo = (weeks: number): Date => {
+  return daysAgo(weeks * 7)
+}
+
+const lastSeenInDays = (timestamp: number): number => {
+  return Math.floor( (Date.now() - timestamp) / (1000 * 60 * 60 * 24) )
+}
 
 export class Stats {
   client: Client;
@@ -28,20 +37,59 @@ export class Stats {
 
   static _defaultStats = (): IDiscordUserStats => ({ posts: 0, words: 0, letters: 0 });
 
+
+  /**
+   * Loads the database that hold the inactivity information of all members
+   */
+  static _loadUserActivityDb = async(): Promise<Map<string, IDiscordUserStatsInactivity>> => {
+    const activityDb = new Map<string, IDiscordUserStatsInactivity>();
+    try {
+      const data = fs.readFileSync(config.INACTIVITY_WEEKS_DB_PATH, 'utf8');
+      for (const line of data.split('\n')) {
+        const [username, timestamp ] = line.split(';')
+        if (username !== ""){
+          activityDb.set(username, { username, lastActivity: parseInt(timestamp)})
+          logger.debug(activityDb.get(username))
+        }
+      }
+      logger.info('succesfully loaded user activity database')
+    } catch (err) {
+      logger.error(`could not read user activity database: ${err}`);
+    }
+    return activityDb;
+  }
+
+  /**
+   * Persists the database that hold the inactivity information of all members
+   */
+  _refreshUserActivityDb = async(stats: Map<string, IDiscordUserStats>) => {
+    const activityDbContent = []
+    for (const [ username , userStats] of stats) {
+      activityDbContent.push(`${username};${userStats.lastActivity}`)
+      logger.debug('succesfully persisted on disk refreshed user activity database')
+    }
+    try {
+      fs.writeFileSync(config.INACTIVITY_WEEKS_DB_PATH, activityDbContent.join('\n'))
+    } catch (err) {
+      logger.error(`could not persist user activity database: ${err}`)
+    }
+  }
+
   /**
      * Initializes stats with the name of all the members
      * @param {GUILD} guild
      * @returns stats object with each username set with default stats
      */
-  static _initStats = async (guild: Guild): Promise<Map<string, IDiscordUserStats>> => {
-    // { cache: false }
+  _initStats = async (guild: Guild): Promise<Map<string, IDiscordUserStats>> => {
     const members = await guild.members.fetch();
     const stats = new Map<string, IDiscordUserStats>();
+    const activityDb = await Stats._loadUserActivityDb();
 
     for (const m of members.values()) {
       const userStats = {
         username: m.user.username,
         ...Stats._defaultStats(),
+        lastActivity: activityDb.get(m.user.username)?.lastActivity || Date.now() // When a member has no activity, set last activity to now()
       };
       stats.set(m.user.username, userStats);
     }
@@ -89,6 +137,25 @@ export class Stats {
     return { active, inactive };
   };
 
+  _getInactiveMembersForRemoval = async (stats: Map<string, IDiscordUserStats>, inactiveMembers: Array<string>): Promise<Set<string>> => {
+    const membersForRemoval = new Set<string>()
+
+    // Because now() is the number of milliseconds from Unix epoc till today, we just need to substract the
+    // number of milliseconds equivalent to NUM_WEEKS ago and we have a point in time in the past
+    // for comparison. I'm not going to deal with the 24h gap in the day (for example we can say that
+    // if it's in the same day it's considered active). If you get removed because of this: sorry mate.
+    //
+    // Weeks to a timestamp in milliseconds: week * days * hours * mins * secs * millis
+    const threeWeeksAgoTs = Date.now() - (config.INACTIVITY_WEEKS_REMOVAL * 7 * 24 * 60 * 60 * 1000)
+    for (const inactiveMember of inactiveMembers){
+      const memberLastActivity = stats.get(inactiveMember).lastActivity
+      if ( memberLastActivity < threeWeeksAgoTs) {
+        membersForRemoval.add(inactiveMember)
+      }
+    }
+    return membersForRemoval
+  }
+
   /**
      * Evaluates user activity over the weeks
      * we rely on the latest weekly update from the bot
@@ -98,15 +165,7 @@ export class Stats {
      */
   _processInactivityWeeks = async (stats: Map<string, IDiscordUserStats>):
   Promise<IDiscordUserStatsActivityMessage> => {
-    // weekly update will be within the last 8 days
-    const fromDate = daysAgo(8);
     const statsChannel = this._getStatsChannel();
-    const messages = await Stats._getChannelMessages(statsChannel, fromDate);
-
-    // We want to avoid counting multiple weeks (e.g. if we sent the weekly update twice)
-    // only consider the oldest weekly update within 8 days
-    const lastWeekUpdate = [...messages.values()].find((m) => m.author.username === 'elprimobot'
-            && m.content.indexOf('Weekly') > -1);
 
     const activityFromStats = Stats._getActivityFromStats(stats);
     const activeThisWeek = new Set();
@@ -114,57 +173,25 @@ export class Stats {
       activeThisWeek.add(userStats.username);
     }
 
-    const getInactive = (field: EmbedField): Set<string> => {
-      const result = new Set<string>();
-      if (!field?.value) {
-        return result;
-      }
-
-      const inactive = field.value.split(',').map((v) => v.trim());
-      for (const u of inactive) {
-        const isNotABot = !config.BOTS.has(u);
-        const inactiveThisWeek = !activeThisWeek.has(u);
-        if (isNotABot && inactiveThisWeek) {
-          result.add(u);
-        }
-      }
-
-      return result;
-    };
     const inactiveMsg = [];
-    if (activityFromStats.inactive.length) {
+    if (activityFromStats.inactive.length){
+      const inactiveMsgVal = [];
+      for (const inactiveUser of activityFromStats.inactive){
+        const lastSeen = stats.get(inactiveUser).lastActivity
+        inactiveMsgVal.push(`${inactiveUser}(${lastSeenInDays(lastSeen)})`)
+      }
       inactiveMsg.push({
-        name: '1 week inactivity: ', value: activityFromStats.inactive.join(', '),
+        name: 'Days of inactivity: ', value: inactiveMsgVal.join(', '),
       });
     }
 
-    const prevEmbedUpdate = lastWeekUpdate?.embeds[0];
-    if (!prevEmbedUpdate) {
-      // when there is no previous weekly update, default to this week's inactivity
-      return {
-        activeUsers: activityFromStats.active,
-        inactivityMessages: inactiveMsg as EmbedField[],
-      };
-    }
-    const prevOneWeekInactive = prevEmbedUpdate.fields[1];
-    const twoWeeksInactive = getInactive(prevOneWeekInactive);
-    if (twoWeeksInactive.size) {
+    const membersToRemove = await this._getInactiveMembersForRemoval(stats, activityFromStats.inactive)
+    if (membersToRemove.size) {
       inactiveMsg.push({
-        name: '2 weeks inactivity: ', value: [...twoWeeksInactive].join(', '),
-      });
-    }
-    const prevTwoWeeks = prevEmbedUpdate.fields[2];
-    const threeWeeksInactive = getInactive(prevTwoWeeks);
-    const prevThreeWeeks = prevEmbedUpdate.fields[3];
-    const manyWeeksInactive = getInactive(prevThreeWeeks);
-    const threeWeeksOrMoreInactive = new Set([...threeWeeksInactive, ...manyWeeksInactive]);
-
-    if (threeWeeksOrMoreInactive.size) {
-      inactiveMsg.push({
-        name: 'removing due to 3+ weeks of inactivity: ', value: [...threeWeeksOrMoreInactive].join(', '),
-      });
-
-      await Stats._kickInactiveMembers(statsChannel.guild, threeWeeksOrMoreInactive);
+        name: `removing due to ${config.INACTIVITY_WEEKS_REMOVAL}+ weeks of inactivity: `,
+        value: [...membersToRemove].join(', ')
+      })
+      await Stats._kickInactiveMembers(statsChannel.guild, membersToRemove);
     }
 
     return {
@@ -227,7 +254,7 @@ export class Stats {
   _computeStatsFromDate = async (fromDate: Date): Promise<Map<string, IDiscordUserStats>> => {
     const dominationGuild = this.client.guilds.resolve(config.GUILD_ID);
     const channels = await dominationGuild.channels.fetch();
-    const stats = await Stats._initStats(dominationGuild);
+    const stats = await this._initStats(dominationGuild);
 
     for (const channel of channels.values()) {
       if (channel.type !== 'GUILD_TEXT') {
@@ -240,13 +267,19 @@ export class Stats {
       logger.debug(`processing ${messages.length} messages from channel ${channel.name}`);
 
       for (const message of messages) {
-        const messageUser = (message).author;
+        const messageUser = message.author;
         const userStats = stats.get(messageUser.username) || Stats._defaultStats();
         userStats.posts++;
         userStats.words += message.content.split(' ').length;
         userStats.letters += message.content.length;
+        userStats.lastActivity = Date.now(); // When a member has  activity, refresh the last activity timestamp
         stats.set(messageUser.username, userStats);
       }
+    }
+
+    // Remove bots from stats
+    for (const bot of config.BOTS) {
+      stats.delete(bot)
     }
     return stats;
   };
@@ -262,10 +295,6 @@ export class Stats {
     inactiveMsg: EmbedField[],
     title: string,
   ) => {
-    if (!activeStats.length && !inactiveMsg) {
-      // nothing to update
-      return;
-    }
 
     let postsValue = '';
     for (const userStats of activeStats) {
@@ -292,9 +321,10 @@ export class Stats {
         and post the weekly stats
     */
   postWeeklyStats = async () => {
-    const fromDate = daysAgo(7);
+    const fromDate = weeksAgo(config.INACTIVITY_WEEKS_REMOVAL);
     const stats = await this._computeStatsFromDate(fromDate);
     const usersActivityMessage = await this._processInactivityWeeks(stats);
     await this._sendStatsChannel(usersActivityMessage.activeUsers, usersActivityMessage.inactivityMessages, '**Weekly Stats**');
+    await this._refreshUserActivityDb(stats)
   };
 }
