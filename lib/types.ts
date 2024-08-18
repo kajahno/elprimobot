@@ -34,6 +34,7 @@ export interface IDiscordUserStats {
   posts: number;
   words?: number;
   letters?: number;
+  lastActivity?: number; // A timestamp.
 }
 
 export interface IDiscordUserStatsActivity {
@@ -44,6 +45,11 @@ export interface IDiscordUserStatsActivity {
 export interface IDiscordUserStatsActivityMessage {
   activeUsers?: Array<IDiscordUserStats>;
   inactivityMessages: Array<EmbedField>;
+}
+
+export interface IDiscordUserStatsInactivity {
+  username: string;
+  lastActivity: number; // A timestamp.
 }
 
 // Leetcode graphql types
