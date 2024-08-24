@@ -1,12 +1,16 @@
 import {
-  Client, EmbedField, Guild, Message, MessageEmbed, TextChannel,
+  Client, Guild, Message, MessageEmbed, TextChannel,
 } from 'discord.js';
 import fs from 'node:fs';
+import { Console } from 'node:console';
+import { Transform } from 'node:stream';
 import { config } from '../config';
 import logger from '../logging';
 import {
-  IDiscordUserStats, IDiscordUserStatsActivity, IDiscordUserStatsActivityMessage,
+  IDiscordUserStats, IDiscordUserStatsActivity,
   IDiscordUserStatsInactivity,
+  ActiveStatsTable,
+  InactiveStatsTable,
 } from '../types';
 
 // helper to get days ago
@@ -20,6 +24,37 @@ const weeksAgo = (weeks: number): Date => daysAgo(weeks * 7);
 
 const lastSeenInDays = (timestamp: number): number => (
   Math.floor((Date.now() - timestamp) / (1000 * 60 * 60 * 24)));
+
+/**
+   * Transform a javascript object into an ascii formatted table string.
+   *
+   * NodeJS already has a console.table function, so with this we use it but instead of stdout
+   * we send the output to another stream.
+   * Now because there's always an extra 'index' column included in the output, it's removed
+   * by doing string manpulations. Not the most elegant, but once nodejs supports removing
+   * this column we can do it this way.
+   *
+   * @param object Any javascript object (dict)
+   * @returns string containing an ascii formatted table
+   */
+const getTableStrFromObj = (object: ActiveStatsTable[] | InactiveStatsTable[]) => {
+  /* eslint-disable */
+  const ts = new Transform({ transform(chunk, enc, cb) { cb(null, chunk); } });
+  const dummyLogger = new Console({ stdout: ts });
+  dummyLogger.table(object);
+
+  let result = '';
+  const tableStr = (ts.read() || '').toString();
+  for (const row of tableStr.split(/[\r\n]+/)) {
+    let r = row.replace(/[^┬]*┬/, '┌');
+    r = r.replace(/^├─*┼/, '├');
+    r = r.replace(/│[^│]*/, '');
+    r = r.replace(/^└─*┴/, '└');
+    r = r.replace(/'/g, ' ');
+    result += `${r}\n`;
+  }
+  return result;
+};
 
 export class Stats {
   client: Client;
@@ -65,10 +100,10 @@ export class Stats {
     const activityDbContent = [];
     for (const [username, userStats] of stats) {
       activityDbContent.push(`${username};${userStats.lastActivity}`);
-      logger.debug('succesfully persisted on disk refreshed user activity database');
     }
     try {
       fs.writeFileSync(config.INACTIVITY_WEEKS_DB_PATH, activityDbContent.join('\n'));
+      logger.debug('succesfully persisted on disk refreshed user activity database');
     } catch (err) {
       logger.error(`could not persist user activity database: ${err}`);
     }
@@ -117,29 +152,30 @@ export class Stats {
     stats: Map<string, IDiscordUserStats>,
   ):
   IDiscordUserStatsActivity => {
-    const active = [];
-    const inactive = [];
+    const activeUsers = [];
+    const inactiveUsers = [];
     for (const [username, userStats] of stats) {
       if (config.BOTS.has(username)) {
         continue;
       }
 
       if (userStats.posts) {
-        active.push(userStats);
+        activeUsers.push(userStats);
       } else {
-        inactive.push(username);
+        inactiveUsers.push(userStats);
       }
     }
 
-    active.sort((a: IDiscordUserStats, b: IDiscordUserStats) => b.posts - a.posts);
-    inactive.sort((a: IDiscordUserStats, b: IDiscordUserStats) => a.posts - b.posts);
+    activeUsers.sort((a: IDiscordUserStats, b: IDiscordUserStats) => b.posts - a.posts);
+    inactiveUsers.sort(
+      (a: IDiscordUserStats, b: IDiscordUserStats) => a.lastActivity - b.lastActivity,
+    );
 
-    return { active, inactive };
+    return { activeUsers, inactiveUsers };
   };
 
   static _getInactiveMembersForRemoval = (
-    stats: Map<string, IDiscordUserStats>,
-    inactiveMembers: Array<string>,
+    inactiveMembers: Array<IDiscordUserStats>,
   ): Set<string> => {
     const membersForRemoval = new Set<string>();
 
@@ -154,9 +190,9 @@ export class Stats {
     const threeWeeksAgoTs = Date.now() - (
       config.INACTIVITY_WEEKS_REMOVAL * 7 * 24 * 60 * 60 * 1000);
     for (const inactiveMember of inactiveMembers) {
-      const memberLastActivity = stats.get(inactiveMember).lastActivity;
+      const memberLastActivity = inactiveMember.lastActivity;
       if (memberLastActivity < threeWeeksAgoTs) {
-        membersForRemoval.add(inactiveMember);
+        membersForRemoval.add(inactiveMember.username);
       }
     }
     return membersForRemoval;
@@ -170,45 +206,26 @@ export class Stats {
      * @returns users inactity over the past few weeks
      */
   _processInactivityWeeks = async (stats: Map<string, IDiscordUserStats>):
-  Promise<IDiscordUserStatsActivityMessage> => {
-    const statsChannel = this._getStatsChannel();
-
+  Promise<IDiscordUserStatsActivity> => {
     const activityFromStats = Stats._getActivityFromStats(stats);
-    const activeThisWeek = new Set();
-    for (const userStats of activityFromStats.active) {
-      activeThisWeek.add(userStats.username);
-    }
 
-    const inactiveMsg = [];
-    if (activityFromStats.inactive.length) {
-      const inactiveMsgVal = [];
-      for (const inactiveUser of activityFromStats.inactive) {
-        const lastSeen = stats.get(inactiveUser).lastActivity;
-        inactiveMsgVal.push(`${inactiveUser}(${lastSeenInDays(lastSeen)})`);
-      }
-      inactiveMsg.push({
-        name: 'Days of inactivity: ', value: inactiveMsgVal.join(', '),
-      });
-    }
+    activityFromStats.inactiveUsersForRemoval = Stats._getInactiveMembersForRemoval(
+      activityFromStats.inactiveUsers,
+    );
 
-    const membersToRemove = Stats._getInactiveMembersForRemoval(stats, activityFromStats.inactive);
-    if (membersToRemove.size) {
-      inactiveMsg.push({
-        name: `removing due to ${config.INACTIVITY_WEEKS_REMOVAL}+ weeks of inactivity: `,
-        value: [...membersToRemove].join(', '),
-      });
-      await Stats._kickInactiveMembers(statsChannel.guild, membersToRemove);
-    }
-
-    return {
-      activeUsers: activityFromStats.active,
-      inactivityMessages: inactiveMsg as EmbedField[],
-    };
+    return activityFromStats;
   };
 
-  static _kickInactiveMembers = async (guild: Guild, usernames: Set<string>) => {
+  _kickInactiveMembers = async (usernames: Set<string>) => {
     // { cache: false }
-    const members = await guild.members.fetch();
+
+    if (!usernames.size){
+      logger.info("No users to kick. Ignoring")
+      return
+    }
+
+    const statsChannel = this._getStatsChannel();
+    const members = await statsChannel.guild.members.fetch();
     for (const guildMember of members.values()) {
       if (usernames.has(guildMember.user.username)) {
         await guildMember.kick();
@@ -298,27 +315,47 @@ export class Stats {
      * @param {*} title title for the update
      */
   _sendStatsChannel = async (
-    activeStats: IDiscordUserStats[],
-    inactiveMsg: EmbedField[],
-    title: string,
+    usersActivity: IDiscordUserStatsActivity,
   ) => {
-    let postsValue = '';
-    for (const userStats of activeStats) {
-      postsValue += `**${userStats.username}** **(** ${userStats.posts} **|** ${userStats.words} **|** ${userStats.letters}** )**\n`;
-    }
+    const activeStatsTable: ActiveStatsTable[] = usersActivity.activeUsers.map((u) => ({
+      username: u.username,
+      posts: u.posts,
+    }));
 
     const message = new MessageEmbed()
       .setColor(0x0099FF).addFields(
-        { name: 'user (posts | words | letters)', value: postsValue, inline: true },
+        {
+          name: 'Active users',
+          value: '```' + getTableStrFromObj(activeStatsTable) + '```',
+          inline: false,
+        },
       );
 
-    if (inactiveMsg && inactiveMsg.length) {
-      message.addFields(...inactiveMsg);
+    if (usersActivity.inactiveUsers.length) {
+      const inactiveStatsTable: InactiveStatsTable[] = usersActivity.inactiveUsers.map((u) => ({
+        username: u.username,
+        lastSeenInDays: lastSeenInDays(u.lastActivity),
+      })).filter((u) => u.lastSeenInDays > 0);
+
+      if (inactiveStatsTable.length) {
+        message.addFields({
+          name: 'Inactive users',
+          value: '```' + getTableStrFromObj(inactiveStatsTable) + '```',
+          inline: false,
+        });
+      }
+    }
+
+    if (usersActivity.inactiveUsersForRemoval.size) {
+      message.addFields({
+        name: `removing due to ${config.INACTIVITY_WEEKS_REMOVAL}+ weeks of inactivity: `,
+        value: [...usersActivity.inactiveUsersForRemoval].join(', '),
+      });
     }
 
     const statsChannel = this._getStatsChannel();
 
-    await statsChannel.send({ content: title, embeds: [message] });
+    await statsChannel.send({ content: '**Weekly Stats**', embeds: [message] });
     logger.debug(`sent stats to channel ${config.STATS_CHANNEL}`);
   };
 
@@ -329,8 +366,9 @@ export class Stats {
   postWeeklyStats = async () => {
     const fromDate = weeksAgo(config.INACTIVITY_WEEKS_REMOVAL);
     const stats = await this._computeStatsFromDate(fromDate);
-    const usersActivityMessage = await this._processInactivityWeeks(stats);
-    await this._sendStatsChannel(usersActivityMessage.activeUsers, usersActivityMessage.inactivityMessages, '**Weekly Stats**');
+    const usersActivity = await this._processInactivityWeeks(stats);
+    await this._kickInactiveMembers(usersActivity.inactiveUsersForRemoval)
+    await this._sendStatsChannel(usersActivity);
     Stats._refreshUserActivityDb(stats);
   };
 }
