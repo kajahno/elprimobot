@@ -1,5 +1,5 @@
 import { InteractionType } from 'discord-interactions';
-import { ColorResolvable, EmbedField } from 'discord.js';
+import { ColorResolvable } from 'discord.js';
 
 // Discord types
 export interface IDiscordInteractionsRequestBody {
@@ -38,13 +38,19 @@ export interface IDiscordUserStats {
 }
 
 export interface IDiscordUserStatsActivity {
-  active: Array<IDiscordUserStats>;
-  inactive: Array<string>;
+  activeUsers: Array<IDiscordUserStats>;
+  inactiveUsers: Array<IDiscordUserStats>;
+  inactiveUsersForRemoval?: Set<string>;
 }
 
-export interface IDiscordUserStatsActivityMessage {
-  activeUsers?: Array<IDiscordUserStats>;
-  inactivityMessages: Array<EmbedField>;
+export interface ActiveStatsTable {
+  username: string
+  posts: number
+}
+
+export interface InactiveStatsTable {
+  username: string
+  lastSeenInDays: number
 }
 
 export interface IDiscordUserStatsInactivity {
