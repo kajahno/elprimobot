@@ -160,8 +160,10 @@ export class Stats {
       }
 
       if (userStats.posts) {
+        logger.info(`user ${userStats.username} is active (well done!)`)
         activeUsers.push(userStats);
       } else {
+        logger.info(`user ${userStats.username} is inactive`)
         inactiveUsers.push(userStats);
       }
     }
@@ -296,7 +298,7 @@ export class Stats {
         userStats.words += message.content.split(' ').length;
         userStats.letters += message.content.length;
         // When a member has  activity, refresh the last activity timestamp
-        userStats.lastActivity = Date.now();
+        userStats.lastActivity = Math.max(message.createdTimestamp, message.editedTimestamp)
         stats.set(messageUser.username, userStats);
       }
     }
