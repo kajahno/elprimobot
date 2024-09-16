@@ -50,7 +50,7 @@ export interface ActiveStatsTable {
 
 export interface InactiveStatsTable {
   username: string
-  lastSeenInDays: number
+  days: number // days of inactivity
 }
 
 export interface IDiscordUserStatsInactivity {

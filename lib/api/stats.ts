@@ -25,6 +25,10 @@ const weeksAgo = (weeks: number): Date => daysAgo(weeks * 7);
 const lastSeenInDays = (timestamp: number): number => (
   Math.floor((Date.now() - timestamp) / (1000 * 60 * 60 * 24)));
 
+const daysConsideredInactive = () => (
+  Math.floor((config.INACTIVITY_WEEKS_REMOVAL * 7) * 0.20)
+);
+
 /**
    * Transform a javascript object into an ascii formatted table string.
    *
@@ -159,12 +163,12 @@ export class Stats {
         continue;
       }
 
-      if (userStats.posts) {
-        logger.info(`user ${userStats.username} is active (well done!)`)
-        activeUsers.push(userStats);
-      } else {
+      if (lastSeenInDays(userStats.lastActivity) > daysConsideredInactive()){
         logger.info(`user ${userStats.username} is inactive`)
-        inactiveUsers.push(userStats);
+        inactiveUsers.push(userStats)
+      } else {
+        logger.info(`user ${userStats.username} is active (well done!)`)
+        activeUsers.push(userStats)
       }
     }
 
@@ -298,7 +302,7 @@ export class Stats {
         userStats.words += message.content.split(' ').length;
         userStats.letters += message.content.length;
         // When a member has  activity, refresh the last activity timestamp
-        userStats.lastActivity = Math.max(message.createdTimestamp, message.editedTimestamp)
+        userStats.lastActivity = Math.max(message.createdTimestamp, userStats.lastActivity)
         stats.set(messageUser.username, userStats);
       }
     }
@@ -336,8 +340,8 @@ export class Stats {
     if (usersActivity.inactiveUsers.length) {
       const inactiveStatsTable: InactiveStatsTable[] = usersActivity.inactiveUsers.map((u) => ({
         username: u.username,
-        lastSeenInDays: lastSeenInDays(u.lastActivity),
-      })).filter((u) => u.lastSeenInDays > 0);
+        days: lastSeenInDays(u.lastActivity),
+      }));
 
       if (inactiveStatsTable.length) {
         message.addFields({
@@ -354,6 +358,8 @@ export class Stats {
         value: [...usersActivity.inactiveUsersForRemoval].join(', '),
       });
     }
+
+    message.setFooter({ text: `A user is considered inactive after ${daysConsideredInactive()} days without sending a message` })
 
     const statsChannel = this._getStatsChannel();
 
