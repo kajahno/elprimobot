@@ -1,0 +1,12 @@
+[Unit]
+Description=Elprimobot - Discord bot
+
+[Service]
+Type=simple
+WorkingDirectory=${ELPRIMOBOT_SCRIPT_PATH}
+ExecStart=/usr/bin/bash start.sh
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=default.target
