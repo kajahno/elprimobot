@@ -18,6 +18,8 @@ import {
 import {
   RANDOM_PROBLEM_COMMAND,
   PROBLEM_FROM_SET_COMMAND,
+  DAILY_PROBLEM_COMMAND,
+  WEEKLY_PROBLEM_COMMAND,
   InstallGuildCommands,
 } from './commands';
 import morganMiddleware from './middleware/morgan';
@@ -76,6 +78,24 @@ const discordInteractionsHandler = async (req: Request, res: Response) => {
         data: message,
       });
     }
+
+    // "dailyproblem" guild command
+    if (name === 'dailyproblem') {
+      const message = await leetcode.getDailyProblemMessage();
+      return res.send({
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: message,
+      });
+    }
+
+    // "weeklyproblem" guild command
+    if (name === 'weeklyproblem') {
+      const message = await leetcode.getWeeklyProblemMessage();
+      return res.send({
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: message,
+      });
+    }
   }
 };
 
@@ -87,6 +107,8 @@ const appListener = async () => {
   await InstallGuildCommands(config.APP_ID, config.GUILD_ID, [
     RANDOM_PROBLEM_COMMAND,
     PROBLEM_FROM_SET_COMMAND,
+    DAILY_PROBLEM_COMMAND,
+    WEEKLY_PROBLEM_COMMAND,
   ]);
 };
 
