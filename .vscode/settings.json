@@ -1,6 +1,3 @@
 {
-    "editor.codeActionsOnSave": {
-        "source.fixAll.eslint": "explicit"
-    },
-    "eslint.validate": ["javascript"]
+    "deno.enable": true
 }
