@@ -90,3 +90,15 @@ export const PROBLEM_FROM_SET_COMMAND: IDiscordGuildCommandDefinition = {
   ],
   type: 1,
 };
+
+export const DAILY_PROBLEM_COMMAND: IDiscordGuildCommandDefinition = {
+  name: 'dailyproblem',
+  description: 'Get the daily leetcode problem',
+  type: 1,
+};
+
+export const WEEKLY_PROBLEM_COMMAND: IDiscordGuildCommandDefinition = {
+  name: 'weeklyproblem',
+  description: 'Get the weekly leetcode problem',
+  type: 1,
+};
